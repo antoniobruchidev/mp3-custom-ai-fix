@@ -1,0 +1,14 @@
+Flask==3.0.3
+Flask-Argon2==0.3.0.0
+Flask-Login==0.6.3
+Flask-Mail==0.10.0
+Flask-Migrate==4.0.7
+Flask-SQLAlchemy==3.1.1
+gunicorn==22.0.0
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.31
+python-dotenv
+requests
+celery
+celery[redis]
+redis
