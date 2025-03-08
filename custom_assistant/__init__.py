@@ -34,3 +34,5 @@ app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USE_SSL"] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 mail = Mail(app)
+
+from custom_assistant import routes
