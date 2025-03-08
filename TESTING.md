@@ -18,3 +18,15 @@ I used Postman to test the routes and see if everything it's working:
     ![Test chat route](custom_assistant/static/readme/test_chat_route.png)
  - Test 404 route. It should return a dict with status 404 and page not found.
     ![Test 404 route](custom_assistant/static/readme/test_404_route.png)
+
+## Testing Heroku environment
+Using Postman:
+ - Test add route.
+    ![Test add route](custom_assistant/static/readme/test_heroku_add_route.png)
+ - Test task_result route.
+    ![Test task_result route](custom_assistant/static/readme/test_heroku_task_result_route.png)
+ - Test chat route.
+    ![Test chat route](custom_assistant/static/readme/test_heroku_chat_route.png)
+    ![Heroku logs](custom_assistant/static/readme/heroku_logs.png)
+ - Test 404 route.
+    ![Test 404 route](custom_assistant/static/readme/test_heroku_404_route.png)
