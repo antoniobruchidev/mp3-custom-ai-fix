@@ -12,3 +12,5 @@ requests
 celery
 celery[redis]
 redis
+boto3
+botocore
