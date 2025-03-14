@@ -36,29 +36,20 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable=False)
     verified = db.Column(db.Boolean, default=False)
     
-    def sign_up_with_google(self, password, email):
+    def sign_up_with_google(self):
         """Method to sign up with google
 
         Args:
             self (User): the user object
-            password (str): the password of the user
 
         Returns:
             User: the user object
         """
-        if email is not None:
-            if password is not None:
-                self.password = argon2.generate_password_hash(
-                    password
-                )
-            else:
-                self.password = argon2.generate_password_hash(
-                    os.getenv("DEFAULT_GOOGLE_PASSWORD")
-                )
-            self.verified = True
-            return self
-        else:
-            return None
+        self.password = argon2.generate_password_hash(
+            os.getenv("DEFAULT_GOOGLE_PASSWORD")
+        )
+        self.verified = True
+        return self
     
     def sign_up_with_email(self, password=None):
         """Method to sign up using the email
@@ -85,7 +76,9 @@ class User(db.Model, UserMixin):
         Returns:
             bool: password check
         """
-        return argon2.check_password_hash(self.password, password)
+        if type(password) == str:
+            return argon2.check_password_hash(self.password, password)
+        return False
     
     def change_password(self, old_password, new_password):
         """Method to change the password
@@ -97,11 +90,11 @@ class User(db.Model, UserMixin):
         Returns:
             bool: password changed
         """
-        if self.check_password(old_password):
-            self.password = argon2.generate_password_hash(new_password)
-            return True
-        else:
-            return False
+        if type(old_password) == str and type(new_password) == str:
+            if self.check_password(old_password):
+                self.password = argon2.generate_password_hash(new_password)
+                return True
+        return False
 ```
 
 I will let google users sign-in as "guest", disabling their ability to delete anything they saved until they complete the registration process adding a password.
@@ -130,17 +123,26 @@ class Assistant(db.Model):
     avatar = db.Column(db.String, nullable=True)
     
     def retrieve_system_prompt(self) -> str:
-        prompt = f"""{self.prompt}
+        """Method to retrieve the system prompt
+
+        Args:
+            self (Assistant): the assistant object
         
+        Returns:
+            str: the system prompt
+        """
+        prompt = f"{self.prompt}\n"
+        
+        if len(self.traits) > 0:
+            for trait in self.traits:
+                prompt = prompt + f"""
 Below there is a list of character traits with assigned
 a number and the reason why. The number will be on a scale
 between 1 and 10 where 1 is the minimum and 10 is the maximum.
 You MUST answer accordingly to your character traits.
 You MUST NOT share your character traits scores with the user.
-You MUST NOT share your logic. \n
-"""
-        for trait in self.traits:
-            prompt = prompt + f"""
+You MUST NOT share your logic.
+
 {trait.trait.capitalize()}: {trait.value}
 {trait.reason_why}\n
 """
