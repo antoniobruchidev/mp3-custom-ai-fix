@@ -144,6 +144,10 @@ class CharacterTrait(db.Model):
     # schema for the charactertrait table
     __tablename__ = "character_traits"
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id",ondelete="CASCADE")
+    )
     trait = db.Column(db.String(32), nullable=False)
     value = db.Column(db.Integer, nullable=False)
     reason_why = db.Column(db.String(255), nullable=False)
@@ -153,6 +157,7 @@ class ChatHistory(db.Model):
     # schema for the chat history table
     __tablename__ = "chat_histories"
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, nullable=False)
     messages = db.Column(JSON)
     user_id = db.Column(
         db.Integer,
