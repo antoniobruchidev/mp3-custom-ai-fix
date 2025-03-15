@@ -4,4 +4,29 @@
 <h1 class="text-center">
     Register Page
 </h1>
+<form method="POST" action="{{url_for('login')}}" id="credential-form">
+    <div class="row">
+        <!-- Google -->
+        <div id="g_id_onload"
+            data-client_id="{{g_client_id}}"
+            data-callback="handleCredentialResponse">
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="input-group col-6 mt-2">
+            <label for="email" class="input-group-text">Email</label>
+            <input id="email" type="email" name="email" required>
+        </div>
+        <div class="input-group col-6 mt-2">
+            <label for="password" class="input-group-text">Password</label>
+            <input id="password" type="password" name="password" required>
+        </div>
+    </div>
+    <button class="btn" id="submitform" type="submit">Register</button>
+    
+
+</form>
 {% endblock %}
+{% block postloadjs %}
+<script src="{{ url_for('static', filename='js/google.js') }}"></script>
+{% endblock%}

@@ -62,3 +62,8 @@ body {
     color:#0248B1;
     text-align: center;
 }
+
+.toast-header {
+    background-color: #0248B1;
+    color: #E5F5FF;
+}

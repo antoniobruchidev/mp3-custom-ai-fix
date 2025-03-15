@@ -1,9 +1,20 @@
-from flask import make_response, request
+import os
+from flask import flash, redirect, render_template, request, url_for
 from celery.result import AsyncResult
 from custom_assistant import app, db
 from custom_assistant.inference import chat
 from custom_assistant.models import User
 from custom_assistant.tasks import celery, add
+from flask_login import LoginManager, current_user, login_required, login_user, logout_user
+
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
 
 # Test routes
 
@@ -40,40 +51,126 @@ def page_not_found(e):
         "status": "404"
     }
 
-@app.post("/create_user")
-def create_user():
+       
+@app.get("/")
+def home():
+    """Route to home
+
+    Returns:
+        render_template: homepage
+    """
+    return render_template("home.html")
+
+
+@app.get("/playground")
+def playground():
+    """Route to playground
+
+    Returns:
+        render_template: playground
+    """
+    return render_template("playground.html")
+
+
+@app.get("/collections")
+def collections():
+    """Route to collections
+
+    Returns:
+        render_template: collections
+    """
+    return render_template("collections.html")
+
+
+@app.route("/register", methods=['GET', 'POST'])
+def register():
     """Route to create a user
 
     Returns:
-        json: user id if successfull, missing data if not
+        json | render_template: user id if successfull, missing data if not | register page
     """
-    google_id = request.form.get("google-id", None)
-    email = request.form.get("email", None)
-    missing_google_id = True
-    missing_password = True
-    missing_email = True
-    user = None
-    if google_id is not None:
-        user = User(google_id=google_id).sign_up_with_google(
-            request.form.get("password", None), email=email
-        )
-        missing_google_id = False
-    else:
-        if email is not None:
-            missing_email = False
-            user = User(email=email).sign_up_with_email(
-                request.form.get("password", None)
+    if request.method == "POST":
+        google_id = request.form.get("google-id", None)
+        email = request.form.get("email", None)
+        missing_google_id = True
+        missing_password = True
+        missing_email = True
+        user = None
+        if google_id is not None:
+            user = User(google_id=google_id).sign_up_with_google(
+                request.form.get("password", None), email=email
             )
-    if request.form.get("password", None) is not None:
-        missing_password = False
-    if user is not None:
-        db.session.add(user)
-        db.session.commit()
-        return {"user_id": user.id, "status": 200}
-    else:
-        return {
-            "status": 400,
-            "google_id": not missing_google_id,
-            "password": not missing_password,
-            "email": not missing_email
+            missing_google_id = False
+        else:
+            if email is not None:
+                missing_email = False
+                user = User(email=email).sign_up_with_email(
+                    request.form.get("password", None)
+                )
+        if request.form.get("password", None) is not None:
+            missing_password = False
+        if user is not None:
+            db.session.add(user)
+            db.session.commit()
+            return {"user_id": user.id, "status": 200}
+        else:
+            return {
+                "status": 400,
+                "google_id": not missing_google_id,
+                "password": not missing_password,
+                "email": not missing_email    
             }
+    else:
+        g_client_id = os.getenv("GOOGLE_CLIENT_ID")
+        return render_template("register.html", g_client_id=g_client_id)
+    
+
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    """Route to login
+
+    Returns:
+        render_template: login page if method is get
+        json: if post
+    """
+    if request.method == "POST":
+        google_id = request.form.get("google-id", None)
+        email = request.form.get("email", None)
+        if google_id is not None:
+            user = db.session.query(User).filter(User.google_id==google_id).first()
+            if user is None:
+                user = User(
+                    google_id=google_id,
+                    email=email
+                ).sign_up_with_google()
+                db.session.add(user)
+                db.session.commit()
+                login_user(user)
+                flash("registered with google")
+                return {"status": 200}
+            else:
+                login_user(user)
+                flash("logged in with google")
+                return {"status": 200}
+        else:
+            user = db.session.query(User).filter(User.email == email).first()
+            if user is not None:
+                password_check = user.check_password(request.form.get("password", None))
+                if password_check:
+                    login_user(user)
+                    flash("logged in")
+                    return redirect(url_for("home"))
+                else:
+                    error = "invalid credentials"
+                    return render_template("login.html", error=error)
+            else:
+                error = "email not found"
+                return render_template("login.html", error=error)
+    g_client_id = os.getenv("GOOGLE_CLIENT_ID")     
+    return render_template("login.html", g_client_id=g_client_id)
+
+@login_required
+@app.route("/logout")
+def logout():
+    logout_user()
+    return redirect(url_for('home'))

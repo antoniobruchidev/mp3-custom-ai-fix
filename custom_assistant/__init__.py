@@ -35,4 +35,7 @@ app.config["MAIL_USE_SSL"] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 mail = Mail(app)
 
+#setting OAUTHLIB insecure transport to 1
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
 from custom_assistant import routes

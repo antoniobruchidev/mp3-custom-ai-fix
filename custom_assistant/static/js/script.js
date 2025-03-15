@@ -21,3 +21,13 @@ const setNavbarActivePage = () => {
 }
 
 setNavbarActivePage()
+
+const toast = document.getElementById("toast")
+
+if (toast != null){
+    const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toast)
+    toastBootstrap.show()
+}
+
+
+
