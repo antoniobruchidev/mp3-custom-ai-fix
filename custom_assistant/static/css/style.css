@@ -1,0 +1,64 @@
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+.navbar {
+    background-color: #0248B1;
+}
+
+.navbar-brand {
+    color: #F9F28A !important;
+}
+
+.nav-link {
+    color: #E5F5FF !important;
+}
+
+.nav-link:hover {
+    color: #F9F28A !important;
+}
+
+.active {
+    color: #F9F28A !important;
+}
+
+.nav-login {
+    margin-right: 20px;
+}
+
+.navbar-end {
+    margin-right: 150px !important;
+}
+
+.navbar-toggler {
+    --bs-navbar-toggler-border-color: #E5F5FF!important;
+    --bs-navbar-toggler-focus-width: None !important
+}
+
+.navbar-toggler-icon {
+    --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgb%28196, 228, 255%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+
+.navbar-toggler-icon:hover {
+    --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.dropdown-menu {
+    background-color:  #E5F5FF;
+}
+
+.dropdown-item:hover {
+    background-image: linear-gradient(#E5F5FF,15%,#F9F28A,85%,#E5F5FF)
+}
+
+.dropdown-divider {
+    background-color: #0248B1;
+}
+
+.dropdown-item {
+    color:#0248B1;
+    text-align: center;
+}
