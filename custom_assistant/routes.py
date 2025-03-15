@@ -90,36 +90,17 @@ def register():
         json | render_template: user id if successfull, missing data if not | register page
     """
     if request.method == "POST":
-        google_id = request.form.get("google-id", None)
-        email = request.form.get("email", None)
-        missing_google_id = True
-        missing_password = True
-        missing_email = True
+        email = request.form.get("email")
         user = None
-        if google_id is not None:
-            user = User(google_id=google_id).sign_up_with_google(
-                request.form.get("password", None), email=email
-            )
-            missing_google_id = False
-        else:
-            if email is not None:
-                missing_email = False
-                user = User(email=email).sign_up_with_email(
-                    request.form.get("password", None)
-                )
-        if request.form.get("password", None) is not None:
-            missing_password = False
+        user = User(email=email).sign_up_with_email(
+            request.form.get("password", None)
+        )
         if user is not None:
             db.session.add(user)
             db.session.commit()
-            return {"user_id": user.id, "status": 200}
+            return redirect(url_for("login"))
         else:
-            return {
-                "status": 400,
-                "google_id": not missing_google_id,
-                "password": not missing_password,
-                "email": not missing_email    
-            }
+            return {"status": 400}
     else:
         g_client_id = os.getenv("GOOGLE_CLIENT_ID")
         return render_template("register.html", g_client_id=g_client_id)
