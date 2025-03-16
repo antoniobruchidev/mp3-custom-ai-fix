@@ -65,6 +65,7 @@ def chat(prompt, message, traits=None, chat_history=None):
     response = requests.request("POST", url, json=payload)
 
     ai_message = response.json()
+    print(ai_message)
     prompt_tokens = ai_message['usage']['prompt_tokens']
     completion_tokens = ai_message['usage']['completion_tokens']
     answer = ai_message['choices'][0]['message']['content']

@@ -96,7 +96,7 @@ const chat = async () => {
     const data = await response.json()
     if (data.status == 200) {
         const chatContainer = document.getElementById("answer-container")
-        chatContainer.innerHTML = createAnswer(data.answer)
+        chatContainer.innerHTML = showAnswer(data.answer)
         console.log(data.answer)
         createToast(`prompt tokens: {${data.prompt_tokens} completion tokens: ${data.comp_tokens}}`)
     }
