@@ -3,6 +3,7 @@ from flask import flash, redirect, render_template, request, url_for
 from celery.result import AsyncResult
 from custom_assistant import app, db
 from custom_assistant.inference import chat
+from custom_assistant.mail import send_activation_email
 from custom_assistant.models import User
 from custom_assistant.tasks import celery, add
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
@@ -98,6 +99,7 @@ def register():
         if user is not None:
             db.session.add(user)
             db.session.commit()
+            send_activation_email(user)
             return redirect(url_for("login"))
         else:
             return {"status": 400}
