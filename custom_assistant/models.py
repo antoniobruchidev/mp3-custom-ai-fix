@@ -13,6 +13,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(66), nullable=False)
     password = db.Column(db.String(255), nullable=False)
     verified = db.Column(db.Boolean, default=False)
+    forgot_passwd_url = db.Column(db.String(), default="")
     
     def sign_up_with_google(self):
         """Method to sign up with google
@@ -29,7 +30,7 @@ class User(db.Model, UserMixin):
         self.verified = True
         return self
     
-    def sign_up_with_email(self, password=None):
+    def sign_up_with_email(self, password=None, confirm_password=None):
         """Method to sign up using the email
 
         Args:
@@ -39,7 +40,7 @@ class User(db.Model, UserMixin):
         Returns:
             User or Nonetype: the user object if there's both email and password or None
         """
-        if password is not None:
+        if password is not None and password == confirm_password:
             self.password = argon2.generate_password_hash(password)
             return self
         else:

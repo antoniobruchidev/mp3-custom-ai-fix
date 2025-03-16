@@ -1,9 +1,9 @@
 import os
 from flask import flash, redirect, render_template, request, url_for
 from celery.result import AsyncResult
-from custom_assistant import app, db
+from custom_assistant import app, db, argon2
 from custom_assistant.inference import chat
-from custom_assistant.mail import send_activation_email
+from custom_assistant.mail import forgot_password_email, send_activation_email
 from custom_assistant.models import User
 from custom_assistant.tasks import celery, add
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
@@ -198,8 +198,69 @@ def login():
                             g_client_id=g_client_id
                         )
     return render_template("login.html", g_client_id=g_client_id)
+    
+
+@app.get("/forgot_password/<email>")
+def forgot_password(email):
+    """Route to request a change of password via email
+
+    Args:
+        email (str): the user email address
+
+    Returns:
+        json: a message or an error
+    """
+    user = db.session.query(User).filter(User.email==email).first()
+    if user is not None:
+        user.forgot_passwd_url = forgot_password_email(user)
+        db.session.add(user)
+        db.session.commit()
+        return {
+            "status": 200,
+            "message": "An email has been sent to you to change your password."}
+    else:
+        return {"status": 404, "error": "Email not found"}
 
 
+@app.route("/change_password/<hash>", methods=["GET", "POST"])
+def change_password(hash):
+    """Method to change the user password:
+
+    Args:
+        hash (str): the hash created during forgot password
+
+    Returns:
+        render_template: change password if get
+        redirect: login or home if post
+    """
+    g_client_id = os.getenv("GOOGLE_CLIENT_ID")
+    user = db.session.query(User).filter(User.forgot_passwd_url==hash).first()
+    if user is None:
+        message = "No users password change at this url"
+        return render_template(
+            "login.html",
+            error=message,
+            g_client_id=g_client_id
+        )
+    else:    
+        if request.method == "POST":
+            user.password = argon2.generate_password_hash(
+                request.form.get("password")
+            )
+            db.session.add(user)
+            db.session.commit()
+            message = "Password changed correctly"
+            return render_template(
+                "login.html",
+                g_client_id=g_client_id,
+                error=message
+            )
+        else:
+            return render_template(
+                "forgot_password.html", hash=hash, user=user
+            )
+        
+        
 @login_required
 @app.route("/logout")
 def logout():
