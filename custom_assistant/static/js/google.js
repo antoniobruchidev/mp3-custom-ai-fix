@@ -40,3 +40,10 @@ const loginOrRegister = async (googleId, email) => {
             console.error(e);
       }
 }
+
+const loginRegisterButton = document.getElementById("register-login-link")
+
+loginRegisterButton.addEventListener("click", function() {
+    const url = loginRegisterButton.getAttribute("data-url");
+    window.location.href = url;   
+})

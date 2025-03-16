@@ -11,6 +11,7 @@ from flask import Flask
 
 UPLOAD_FOLDER = "/static/images/"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+HEROKU_DOMAIN = os.getenv("HEROKU_DOMAIN")
 
 load_dotenv()
 

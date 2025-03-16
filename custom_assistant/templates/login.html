@@ -1,35 +1,69 @@
 {% extends "base.html" %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<h1 class="text-center">
+<h1 class="text-center mt-5">
     Login Page
 </h1>
-<form method="POST" action="{{url_for('login')}}" id="credential-form">
-    <div class="row">
-        <!-- Google -->
-        <div id="g_id_onload"
-            data-client_id="{{g_client_id}}"
-            data-callback="handleCredentialResponse">
-        </div>
+<form method="POST" action="{{url_for('login')}}" id="credential-form" class="mx-auto mt-5">
+    <!-- Google -->
+    <div id="g_id_onload"
+        data-client_id="{{g_client_id}}"
+        data-callback="handleCredentialResponse">
     </div>
-    <div class="row mt-4">
-        <div class="input-group col-6 mt-2">
-            <label for="email" class="input-group-text">Email</label>
-            <input id="email" type="email" name="email" required>
+    <div class="card">
+        <div class="card-header">
+            Login
         </div>
-        <div class="input-group col-6 mt-2">
-            <label for="password" class="input-group-text">Password</label>
-            <input id="password" type="password" name="password" required>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="mt-4 w-75  mx-auto">
+                    <label for="email" class="form-label">Email</label>
+                    <input id="email" class="form-control" type="email" name="email" required>
+                </div>
+                <div class="mt-4 w-75 mx-auto">
+                    <label for="password" class="form-label">Password</label>
+                    <input id="password" class="form-control" type="password" name="password" required>
+                </div>
+            </div>
+            <div class="mb-3 w-75 mt-5 mx-auto">
+                <div class=" btn-group" role="group" aria-label="Login or Register">
+                    <button class="btn btn-login-register" id="submitform" type="submit">Login</button>
+                    <button class="btn btn-login-register" data-url="{{ url_for('register') }}" id="register-login-link">
+                        Go to register page <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                <a href="" id="forgot-password">Forgot your password?</a>
+            </div>
         </div>
-    </div>
-    <div class="btn-group mt-3">
-        <button class="btn" id="submitform" type="submit">Login</button>
-        <a href="{{ url_for('register') }}" class="btn">
-            Register
-        </a>
     </div>
 </form>
+{% if error %}
+<div id="error" class="hidden">
+    {{ error }}
+</div>
+{% endif %}
 {% endblock %}
 {% block postloadjs %}
 <script src="{{ url_for('static', filename='js/google.js') }}"></script>
+<script>
+    const forgotPasswordLink = document.getElementById("forgot-password")
+    forgotPasswordLink.addEventListener("click", async function(e){
+        e.preventDefault()
+        const email = document.getElementById("email")
+        if (email.value != ""){
+            const url = window.location.pathname.replace("/login", `/forgot_password/${email.value}`)
+            const response = await fetch(url, {
+                method: "GET"
+            })
+            const data = await response.json()
+            if (data.status == 200) {
+                createToast(data.message)
+            } else {
+                createToast(data.error)
+            }
+        } else {
+            createToast("Enter an email")
+        }
+    })
+</script>
 {% endblock%}

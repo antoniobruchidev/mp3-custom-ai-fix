@@ -88,24 +88,48 @@ def register():
     """Route to create a user
 
     Returns:
-        json | render_template: user id if successfull, missing data if not | register page
+        json | render_template: user id if successfull,
+        missing data if not | register page
     """
+    g_client_id = os.getenv("GOOGLE_CLIENT_ID")
     if request.method == "POST":
         email = request.form.get("email")
         user = None
         user = User(email=email).sign_up_with_email(
-            request.form.get("password", None)
+            request.form.get("password", None),
+            request.form.get("confirm-password", None)
         )
         if user is not None:
             db.session.add(user)
             db.session.commit()
             send_activation_email(user)
-            return redirect(url_for("login"))
+            return redirect(url_for("login", g_client_id=g_client_id))
         else:
-            return {"status": 400}
+            error = f"Email {user.email} already present"
+            return redirect(url_for(
+                "login",
+                error=error,
+                g_client_id=g_client_id
+            ))
     else:
-        g_client_id = os.getenv("GOOGLE_CLIENT_ID")
         return render_template("register.html", g_client_id=g_client_id)
+
+
+@app.get("/verify/<user_id>")
+def verify_user(user_id):
+    """Route to verify user email address
+
+    Args:
+        user_id (int): the user id
+
+    Returns:
+        redirect: login
+    """
+    user = db.session.get(User, user_id)
+    user.verified = True
+    db.session.add(user)
+    db.session.commit()
+    return redirect(url_for("login"))
     
 
 @app.route("/login", methods=['GET', 'POST'])
@@ -116,11 +140,14 @@ def login():
         render_template: login page if method is get
         json: if post
     """
+    g_client_id = os.getenv("GOOGLE_CLIENT_ID")
     if request.method == "POST":
         google_id = request.form.get("google-id", None)
         email = request.form.get("email", None)
         if google_id is not None:
-            user = db.session.query(User).filter(User.google_id==google_id).first()
+            user = db.session.query(User).filter(
+                User.google_id==google_id
+            ).first()
             if user is None:
                 user = User(
                     google_id=google_id,
@@ -138,22 +165,48 @@ def login():
         else:
             user = db.session.query(User).filter(User.email == email).first()
             if user is not None:
-                password_check = user.check_password(request.form.get("password", None))
-                if password_check:
-                    login_user(user)
-                    flash("logged in")
-                    return redirect(url_for("home"))
+                if user.verified:
+                    password_check = user.check_password(
+                        request.form.get("password", None)
+                    )
+                    
+                    if password_check:
+                        login_user(user)
+                        flash("logged in")
+                        return redirect(url_for("home"))
+                    else:
+                        error = "Invalid credentials"
+                        return render_template(
+                            "login.html",
+                            error=error,
+                            g_client_id=g_client_id
+                        )
                 else:
-                    error = "invalid credentials"
-                    return render_template("login.html", error=error)
+                    send_activation_email(user)
+                    error = f"""User not verified - please verify 
+                    from the email sent at {user.email}"""
+                    return render_template(
+                            "login.html",
+                            error=error,
+                            g_client_id=g_client_id
+                        )
             else:
-                error = "email not found"
-                return render_template("login.html", error=error)
-    g_client_id = os.getenv("GOOGLE_CLIENT_ID")     
+                error = "Email not found"
+                return render_template(
+                            "login.html",
+                            error=error,
+                            g_client_id=g_client_id
+                        )
     return render_template("login.html", g_client_id=g_client_id)
+
 
 @login_required
 @app.route("/logout")
 def logout():
+    """Route to logout
+
+    Returns:
+        redirect: home
+    """
     logout_user()
     return redirect(url_for('home'))
