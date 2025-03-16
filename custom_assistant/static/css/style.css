@@ -4,6 +4,13 @@ body {
     flex-direction: column;
 }
 
+main {
+    background-image: linear-gradient(to right,#E5F5FF, 15%, #F9F28A, 85%, #E5F5FF);
+    padding: 15px;
+    color: #0248B1;
+    height: 100vh;
+}
+
 .navbar {
     background-color: #0248B1;
 }
@@ -66,4 +73,70 @@ body {
 .toast-header {
     background-color: #0248B1;
     color: #E5F5FF;
+}
+
+.hidden {
+    display: none;
+}
+
+#forgot-password {
+    margin-top: 15px;
+    margin-left: 50px;
+    display: inline-block;
+}
+
+.content-container {
+    margin-top: 15px;
+}
+
+.assistant-container {
+    margin-top: 20px;
+}
+
+.btn-add-trait, .btn-login-register {
+    background-color: #0248B1;
+    color: #E5F5FF;
+}
+
+.btn-add-trait:hover, .btn-login-register:hover {
+    background-color: #E5F5FF;
+    color: #0248B1;
+    border: 1px solid #0248B1;
+}
+
+.btn-discard {
+    background-color: red;
+    color: #E5F5FF;
+}
+
+.btn-discard:hover {
+    background-color: #ffd7d7;
+    color: red;
+    border: 1px solid red;
+}
+
+.card-header, .modal-header {
+    background-color: #0248B1;
+    color: #E5F5FF;
+}
+
+.modal-body {
+    padding: 20px !important;
+}
+
+.modal-body input {
+    margin-bottom: 5px;
+}
+
+.btn-trait {
+    background-color: #E5F5FF;
+    color: #0248B1;
+}
+
+.btn-popover {
+    --bs-popover-border-color:#0248B1;
+    --bs-popover-header-bg: #0248B1;
+    --bs-popover-header-color: #E5F5FF;
+    --bs-popover-body-padding-x: 10px;
+    --bs-popover-body-padding-y: 10px;
 }
