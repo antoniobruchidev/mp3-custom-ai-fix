@@ -40,9 +40,23 @@ def start_add() -> dict[str, object]:
     return {"result_id": result.id}
 
 
-@app.get("/chat")
-def bot_answer() -> dict[str, str]:
-    return {"message": chat()}
+@app.post("/chat")
+def bot_answer() -> dict:
+    """Method to invoke the chatbot
+
+    Returns:
+        dict: answer and tokens usage
+    """
+    prompt = request.form.get("base-prompt")
+    traits = request.form.get("traits")
+    message= request.form.get("message")
+    answer, prompt_tokens, comp_tokens = chat(prompt, message, traits)
+    return {
+        "status": 200,
+        "answer": answer,
+        "prompt_tokens": prompt_tokens,
+        "comp_tokens": comp_tokens
+        }
 
 
 @app.errorhandler(404)

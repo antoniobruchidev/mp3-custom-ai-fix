@@ -1,7 +1,79 @@
 {% extends "base.html" %}
 {% block title %}Playground{% endblock %}
 {% block content %}
-<h1 class="text-center">
+<h1 class="text-center mt-5">
     Playground Page
 </h1>
+<div class="assistant-container mt-5">
+    <div class="card">
+        <div class="card-header">
+            Your Custom Assistant
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="base-prompt" class="form-label">Base prompt:</label>
+                <textarea class="form-control" id="base-prompt" rows="3"></textarea>
+            </div>
+            <div class=" btn-group" role="group" aria-label="Add or clear traits">
+                <button id="clear" class="btn btn-discard" type="button">
+                    Clear
+                </button>
+                <button class="btn btn-add-trait" type="button" data-bs-toggle="modal" data-bs-target="#add-trait-modal">
+                    Add Trait
+                </button>
+            </div>
+            <div id="traits-container" class="mt-2">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="chat-container mt-4">
+    <div class="card">
+        <div class="card-header">
+            Your message
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="message" class="form-label">message:</label>
+                <textarea class="form-control" id="message" rows="3"></textarea>
+            </div>
+            <button id="send-message" class="btn btn-add-trait" type="button">
+                Send message
+            </button>
+                <div id="answer-container" class="mt-2">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="add-trait-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add trait</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label for="trait">Trait</label>
+                <input type="str" class="form-control" id="trait" placeholder="Example: blunt">
+                
+                <label for="value" class="form-label">Value</label>
+                <input type="range" class="form-range" min="1" max="10" id="value">
+                         
+                <textarea class="form-control" placeholder="Reason why..." id="reason-why" style="height: 100px"></textarea>
+                
+            </div>
+            <div class="modal-footer">
+                <button id="close-trait" type="button" class="btn btn-discard" data-bs-dismiss="modal">Close</button>
+                <button id="save-trait" type="button" class="btn btn-add-trait">Save changes</button>
+            </div>
+        </div>
+    </div>
+  </div>
+  
+{% endblock %}
+
+{% block postloadjs %}
+<script src="{{ url_for('static', filename="js/playground.js")}}"></script>
 {% endblock %}
