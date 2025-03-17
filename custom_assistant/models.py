@@ -124,15 +124,16 @@ class Assistant(db.Model):
         prompt = f"{self.prompt}\n"
         
         if len(self.traits) > 0:
-            for trait in self.traits:
-                prompt = prompt + f"""
+            prompt = prompt + """
 Below there is a list of character traits with assigned
 a number and the reason why. The number will be on a scale
 between 1 and 10 where 1 is the minimum and 10 is the maximum.
 You MUST answer accordingly to your character traits.
 You MUST NOT share your character traits scores with the user.
-You MUST NOT share your logic.
+You MUST NOT share your logic.\n"""
 
+            for trait in self.traits:
+                prompt = prompt + f"""
 {trait.trait.capitalize()}: {trait.value}
 {trait.reason_why}\n
 """

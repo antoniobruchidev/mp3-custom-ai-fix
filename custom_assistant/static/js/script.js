@@ -54,6 +54,9 @@ const createToast = (message) => {
     t.setAttribute("role", "alert")
     t.setAttribute("aria-live", "assertive")
     t.setAttribute("aria-atomic", "true")
+    t.setAttribute("data-bs-animation", true)
+    t.setAttribute("data-bs-autohide", true)
+    t.setAttribute("data-bs-delay", 10000)
     const tH = document.createElement("div")
     tH.classList.add("toast-header")
     const strong = document.createElement("strong")
@@ -77,7 +80,6 @@ const createToast = (message) => {
     })
 }
 
-const main = $("main")
 // check for errors
 const error = document.getElementById("error")
 

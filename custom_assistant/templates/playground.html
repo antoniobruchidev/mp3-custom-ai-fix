@@ -8,8 +8,22 @@
     <div class="card">
         <div class="card-header">
             Your Custom Assistant
+            {% if user %}
+                {% if user.is_authenticated %}
+                    <span class="slots-available ms-3 mt-1 d-block">
+                        Assistants available: {{ assistants_available }} of {{ assistants_limit }}
+                    </span>
+                    <span class="slots-available ms-3">
+                        Traits available: {{ traits_available }} of {{ traits_limit }}
+                    </span>
+                {% endif %}
+            {% endif %}
         </div>
         <div class="card-body">
+            <div class="my-3 w-50">
+                <label for="assistant-name" class="form-label">Name</label>
+                <input id="assistant-name" class="form-control" type="text" name="assistant-name" required>
+            </div>
             <div class="mb-3">
                 <label for="base-prompt" class="form-label">Base prompt:</label>
                 <textarea class="form-control" id="base-prompt" rows="3"></textarea>
@@ -22,6 +36,13 @@
                     Add Trait
                 </button>
             </div>
+            {% if user %}
+                {% if user.is_authenticated %}
+                    <button id="save-assistant" class="btn btn-save-assistant d-inline ms-3" type="button">
+                        Save Assistant
+                    </button>
+                {% endif%}
+            {% endif %}
             <div id="traits-container" class="mt-2">
             </div>
         </div>
@@ -51,22 +72,45 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add trait</h5>
+                <h5 class="modal-title">Create a trait or use a saved one</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div id="traits-name-value-modal">
                 <label for="trait">Trait</label>
-                <input type="str" class="form-control" id="trait" placeholder="Example: blunt">
+                <input type="text" class="form-control" id="trait" placeholder="Example: blunt">
                 
-                <label for="value" class="form-label">Value</label>
+                <label id="value-label" for="value" class="form-label">Value</label>
                 <input type="range" class="form-range" min="1" max="10" id="value">
+            </div>
                          
                 <textarea class="form-control" placeholder="Reason why..." id="reason-why" style="height: 100px"></textarea>
+
+                {% if user.is_authenticated %}
+                    <div id="traits-container-modal">
+                        <p> Your existing traits - Double click to choose, single click to see details</p>
+                        {% if traits %}
+                            {% for trait in traits%}
+                            <button
+                                type="button"
+                                class="btn btn-trait m-2 custom-tooltip"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="bottom"
+                                data-bs-title="{{ trait.reason_why }}"
+                                data-id="{{ trait.id }}"
+                                data-bs-trigger="click"
+                                data-bs-custom-class="custom-tooltip">
+                                {{ trait.trait|upper }}: {{ trait.value }}
+                              </button>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                {% endif %}
                 
             </div>
             <div class="modal-footer">
                 <button id="close-trait" type="button" class="btn btn-discard" data-bs-dismiss="modal">Close</button>
-                <button id="save-trait" type="button" class="btn btn-add-trait">Save changes</button>
+                <button id="save-trait" type="button" class="btn btn-add-trait">Add new trait</button>
             </div>
         </div>
     </div>
