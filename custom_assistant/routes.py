@@ -267,7 +267,7 @@ def verify_user(user_id):
     except OperationalError as e:
         error = f"Operational error: {e} - please retry..."
         return render_template("login.html", g_client_id=g_client_id, error=error)
-    return render_template("login", g_client_id=g_client_id, error="Account verified.")
+    return render_template("login.html", g_client_id=g_client_id, error="Account verified.")
     
 
 @app.route("/login", methods=['GET', 'POST'])
