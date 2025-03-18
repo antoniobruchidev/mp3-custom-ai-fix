@@ -4,12 +4,16 @@ from celery.result import AsyncResult
 from custom_assistant import app, db, argon2
 from custom_assistant.inference import chat
 from custom_assistant.mail import forgot_password_email, send_activation_email
-from custom_assistant.models import Assistant, CharacterTrait, User
+from custom_assistant.models import Assistant, CharacterTrait, Collection, User
 from custom_assistant.tasks import celery, add
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from psycopg2 import OperationalError
+from psycopg2.errors import NotNullViolation
 
 from custom_assistant.utils import get_proprietary_hardware_status
+from custom_assistant.models import Source
+from custom_assistant.storage import get_files, upload_file
+from custom_assistant.utils import save_file
 
 
 login_manager = LoginManager()
@@ -203,6 +207,8 @@ def create_assistant():
     flash(f"name: {data['assistant_name']} - base prompt: {data['base_prompt']} - traits: {data['traits']}")
     return {"status": 200}
 
+
+@login_required
 @app.get("/collections")
 def collections():
     """Route to collections
@@ -210,7 +216,30 @@ def collections():
     Returns:
         render_template: collections
     """
-    return render_template("collections.html")
+    collections_limit = os.getenv("COLLECTION_SLOTS", 3)
+    sources_limit = os.getenv("SOURCES_SLOTS", 10)
+    try:
+        collections = db.session.query(Collection).filter(
+            Collection.user_id==current_user.id
+        ).all()
+        c_sources = [collection.sources for collection in collections]
+        collections_with_sources = zip(collections, c_sources)
+        sources = db.session.query(Source).filter(
+            Source.user_id==current_user.id
+        ).all()
+    except OperationalError as e:
+        return redirect('colections')
+    collections_available = collections_limit - len(collections)
+    sources_available = sources_limit - len(sources)
+    return render_template(
+        "collections.html",
+        collections_limit=collections_limit,
+        sources_limit=sources_limit,
+        collections_with_sources=collections_with_sources,
+        collections_available=collections_available,
+        sources_available=sources_available,
+        sources=sources      
+    )
 
 
 @app.route("/register", methods=['GET', 'POST'])
@@ -281,63 +310,70 @@ def login():
         json: if post
     """
     g_client_id = os.getenv("GOOGLE_CLIENT_ID")
-    if request.method == "POST":
-        google_id = request.form.get("google-id", None)
-        email = request.form.get("email", None)
-        if google_id is not None:
-            user = db.session.query(User).filter(
-                User.google_id==google_id
-            ).first()
-            if user is None:
-                user = User(
-                    google_id=google_id,
-                    email=email
-                ).sign_up_with_google()
-                db.session.add(user)
-                db.session.commit()
-                login_user(user)
-                flash("registered with google")
-                return {"status": 200}
-            else:
-                login_user(user)
-                flash("logged in with google")
-                return {"status": 200}
-        else:
-            user = db.session.query(User).filter(User.email == email).first()
-            if user is not None:
-                if user.verified:
-                    password_check = user.check_password(
-                        request.form.get("password", None)
-                    )
-                    
-                    if password_check:
-                        login_user(user)
-                        flash("logged in")
-                        return redirect(url_for("home"))
-                    else:
-                        error = "Invalid credentials"
-                        return render_template(
-                            "login.html",
-                            error=error,
-                            g_client_id=g_client_id
-                        )
+    try:
+        if request.method == "POST":
+            google_id = request.form.get("google-id", None)
+            email = request.form.get("email", None)
+            if google_id is not None:
+                user = db.session.query(User).filter(
+                    User.google_id==google_id
+                ).first()
+                if user is None:
+                    user = User(
+                        google_id=google_id,
+                        email=email
+                    ).sign_up_with_google()
+                    db.session.add(user)
+                    db.session.commit()
+                    login_user(user)
+                    flash("registered with google")
+                    return {"status": 200}
                 else:
-                    send_activation_email(user)
-                    error = f"""User not verified - please verify 
-                    from the email sent at {user.email}"""
-                    return render_template(
-                            "login.html",
-                            error=error,
-                            g_client_id=g_client_id
-                        )
+                    login_user(user)
+                    flash("logged in with google")
+                    return {"status": 200}
             else:
-                error = "Email not found"
-                return render_template(
-                            "login.html",
-                            error=error,
-                            g_client_id=g_client_id
+                user = db.session.query(User).filter(User.email == email).first()
+                if user is not None:
+                    if user.verified:
+                        password_check = user.check_password(
+                            request.form.get("password", None)
                         )
-    return render_template("login.html", g_client_id=g_client_id)
+                        
+                        if password_check:
+                            login_user(user)
+                            flash("logged in")
+                            return redirect(url_for("home"))
+                        else:
+                            error = "Invalid credentials"
+                            return render_template(
+                                "login.html",
+                                error=error,
+                                g_client_id=g_client_id
+                            )
+                    else:
+                        send_activation_email(user)
+                        error = f"""User not verified - please verify 
+                        from the email sent at {user.email}"""
+                        return render_template(
+                                "login.html",
+                                error=error,
+                                g_client_id=g_client_id
+                            )
+                else:
+                    error = "Email not found"
+                    return render_template(
+                                "login.html",
+                                error=error,
+                                g_client_id=g_client_id
+                            )
+        return render_template("login.html", g_client_id=g_client_id)
+    except OperationalError as e:
+        return render_template(
+            "login.html",
+            g_client_id=g_client_id,
+            error=f"Operational Error: {e} - Please retry..."
+        )
     
 
 @app.get("/forgot_password/<email>")
@@ -350,16 +386,19 @@ def forgot_password(email):
     Returns:
         json: a message or an error
     """
-    user = db.session.query(User).filter(User.email==email).first()
-    if user is not None:
-        user.forgot_passwd_url = forgot_password_email(user)
-        db.session.add(user)
-        db.session.commit()
-        return {
-            "status": 200,
-            "message": "An email has been sent to you to change your password."}
-    else:
-        return {"status": 404, "error": "Email not found"}
+    try:
+        user = db.session.query(User).filter(User.email==email).first()
+        if user is not None:
+            user.forgot_passwd_url = forgot_password_email(user)
+            db.session.add(user)
+            db.session.commit()
+            return {
+                "status": 200,
+                "message": "An email has been sent to you to change your password."}
+        else:
+            return {"status": 404, "error": "Email not found"}
+    except OperationalError as e:
+        return {"status": 500, "error": "Operational error: {e} - Please retry..."}
 
 
 @app.route("/change_password/<hash>", methods=["GET", "POST"])
@@ -374,7 +413,10 @@ def change_password(hash):
         redirect: login or home if post
     """
     g_client_id = os.getenv("GOOGLE_CLIENT_ID")
-    user = db.session.query(User).filter(User.forgot_passwd_url==hash).first()
+    try:
+        user = db.session.query(User).filter(User.forgot_passwd_url==hash).first()
+    except OperationalError:
+        return redirect(url_for('change_password', hash=hash))
     if user is None:
         message = "No users password change at this url"
         return render_template(
@@ -384,12 +426,20 @@ def change_password(hash):
         )
     else:    
         if request.method == "POST":
-            user.password = argon2.generate_password_hash(
-                request.form.get("password")
-            )
-            db.session.add(user)
-            db.session.commit()
-            message = "Password changed correctly"
+            try:
+                user.password = argon2.generate_password_hash(
+                    request.form.get("password")
+                )
+                db.session.add(user)
+                db.session.commit()
+                message = "Password changed correctly"
+            except OperationalError as e:
+                message = "Operational error: {e} - Please retry..."
+                return render_template(
+            "login.html",
+            error=message,
+            g_client_id=g_client_id
+        )
             return render_template(
                 "login.html",
                 g_client_id=g_client_id,
@@ -419,6 +469,87 @@ def get_status():
     """
     chat_server, embedding_server = get_proprietary_hardware_status()
     return {
+        "status": 200,
         "chat_server": chat_server,
         "embedding_server": embedding_server
     }
+
+
+@login_required
+@app.post("/collections/create")
+def create_collection():
+    """Route to create a collection
+
+    Returns:
+        dict: collection id
+    """
+    collection_name=request.form.get("collection-name")
+    description=request.form.get("collection-description", None)
+    if description is None or description == "":
+        flash("error")
+        return redirect(url_for("collections"))
+    try:
+        user_id = current_user.id
+        collection = Collection(
+            collection_name=request.form.get("collection-name"),
+            documents_description=request.form.get("collection-description"),
+            user_id=user_id
+        )
+        db.session.add(collection)
+        db.session.commit()
+        flash(f"Added collection {collection.id}")
+        return redirect(url_for("collections"))
+    except OperationalError as e:
+        flash(f"Operational error: {e} - Please retry...")
+        return redirect(url_for("collections"))
+    except Exception as e:
+        flash(f"Unknown error: {e} - Please retry...")
+        return redirect(url_for("collections"))
+
+
+@login_required
+@app.post("/sources/create")
+def create_source():
+    """Route to create a source
+
+    Returns:
+        dict: source id
+    """
+    try:
+        user_id = current_user.id
+    except OperationalError as e:
+        return {
+            "status": 500,
+            "error": f"Operational error: {e} - Please retry..."
+        }
+    saved, filename = save_file(request, user_id)
+    description = request.form.get("description", None)
+    name = request.form.get("source-name", None)
+    if saved:
+        try:
+            aws_key = f"{user_id}/{filename}"
+            keys = get_files()
+            for key in keys:
+                if aws_key in key:
+                    return {"status": 400, "error": "Source already present, please refresh the page."}
+            print(aws_key)
+            source = Source(
+                filename=filename,
+                user_id=user_id,
+                aws_key=aws_key,
+                description=description,
+                name=name
+            )
+            db.session.add(source)
+            db.session.commit()
+            assert upload_file(aws_key)
+            print("uploaded to aws")
+        except OperationalError as e:
+            return {"status": 500, "error": f"Operational error: {e} - Please retry..."}
+        except NotNullViolation as e:
+            return {"status": 500, "error": f"Missing data: {e} - Please retry..."}
+        except Exception as e:
+            return {"status": 500, "error": f"Unknown error: {e}"}
+        return {"status": 200, "message": f"Added source: {source.id}"}
+    else:
+        return {"status": 400, "error": "Error saving the file"}

@@ -1,7 +1,107 @@
 {% extends "base.html" %}
 {% block title %}Collections{% endblock %}
 {% block content %}
-<h1 class="text-center">
+<h1 class="text-center mt-5">
     Collections Page
 </h1>
+<div class="collection-container mt-5">
+    <div class="card">
+        <div class="card-header">
+            Your Collections
+            <span class="slots-available ms-3 mt-1 d-block">
+                Collections available: {{ collections_available }} of {{ collections_limit }}
+            </span>
+            <span class="slots-available ms-3">
+                Sources available: {{ sources_available }} of {{ sources_limit }}
+            </span>
+        </div>
+        <div class="card-body">
+            <select id="collection-select" class="form-select" aria-label="Select you collection">
+                <option selected>Select you collection</option>
+                {% for collection, sources in collections_with_sources %}
+                    <option value="{{ collection.id }}">{{ collection.collection_name }} - {{ sources|truncate(24) }}</option>
+                {% endfor %}
+            </select>
+            <form action="{{ url_for("create_collection") }}" method="post" id="collection-form">
+                <div class="my-3 w-50">
+                    <label for="collection-name" class="form-label">Name</label>
+                    <input id="collection-name" class="form-control" type="text" name="collection-name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description:</label>
+                    <textarea class="form-control" id="collection-description" name="collection-description" rows="3" required></textarea>
+                </div>
+                <div class="btn-group" role="group" aria-label="Add sources">
+                    <button id="clear" class="btn btn-discard" type="reset">
+                        Clear
+                    </button>
+                    <button id="save-collection" class="btn btn-save-collection" type="submit">
+                        Save Collection
+                    </button>
+                </div>
+                <button id="add-source" class="btn btn-add-source d-inline ms-3" type="button"
+                    data-bs-toggle="offcanvas" data-bs-target="#offcanvasSources" aria-controls="offcanvasSources">
+                    Add source
+                </button>
+            </form>
+            <div id="sources-container" class="mt-2">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasSources" aria-labelledby="offcanvasSourcesLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title mx-auto" id="offcanvasSourcesLabel">Sources</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+<div class="offcanvas-body">
+
+    <div class="card">
+        <div class="card-body">
+            <div ="card-header">
+                Your uploaded documents. Select one or add a new.
+                Only PDFs are supported at the moment.
+            </div>
+            {% if sources|length > 0 %}
+                <h5 class="card-title"> Documents </h5>
+                <div class="accordion" id="accordionSources">
+                    {% for source in sources %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#source{{ source.id }}" aria-expanded="true" aria-controls="source{{ source.id }}">
+                                {{ source.name }}
+                                </button>
+                            </h2>
+                            <div id="source{{ source.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionSources">
+                                <div class="accordion-body">
+                                    {{ source.description }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+            {% else %}
+                <h5 class="card-title mt-1">No documents </h5>
+            {% endif %}
+            <h6 class="card-subtitle mt-2">Add a new source</h6>
+            <form id="source-form" class="mt-2">
+                <div class="my-2">
+                    <label for="source-name" class="form-label">Name</label>
+                    <input id="source-name" class="form-control" type="text" name="source-name" required>
+                </div>
+                <textarea class="form-control mt-2" id="description" name="description" rows="3" placeholder="Document description"></textarea>
+                <div class="mb-3 mt-2">
+                    <label for="file_input" class="form-label">Upload new document</label>
+                    <input class="form-control" type="file" id="file_input" name="file_input" accept="application/pdf">
+                </div>
+                <button type="button" class="btn btn-upload" id="upload-source">Upload new Document</button>
+            </form>                   
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block postloadjs %}
+<script src="{{ url_for('static', filename="js/collections.js")}}"></script>
 {% endblock %}

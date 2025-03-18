@@ -221,7 +221,13 @@ class Source(db.Model):
     __tablename__ = "sources"
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(64), nullable=False)
+    name = db.Column(db.String(16), nullable=True)
+    description = db.Column(db.String(255), nullable=False)
     user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE")
     )
     aws_key = db.Column(db.String, nullable=False)
+    
+    def __repr__(self):
+        return self.description
+    

@@ -6,6 +6,11 @@ body {
     background-image: linear-gradient(to right,#F9F28A, 15%, #E5F5FF , 85%, #F9F28A);
 }
 
+.offcanvas {
+    background-color: #F9F28A;
+    color: #0248B1;
+}
+
 .navbar {
     background-color: #0248B1;
 }
@@ -90,18 +95,26 @@ body {
 
 .btn-add-trait,
 .btn-login-register,
-.btn-save-assistant {
+.btn-save-assistant,
+.btn-save-collection,
+.btn-add-source,
+.btn-send-message,
+.btn-upload {
     background-color: #0248B1;
     color: #E5F5FF;
 }
 
-.btn-add-trait:hover, .btn-login-register:hover {
+.btn-add-trait:hover,
+.btn-login-register:hover,
+.btn-add-source:hover {
     background-color: #E5F5FF;
     color: #0248B1;
     border: 1px solid #0248B1;
 }
 
-.btn-save-assistant:hover {
+.btn-save-assistant:hover,
+.btn-save-collection:hover,
+.btn-upload:hover {
     background-color: #008100;
     color: #E5F5FF;
     border: 1px solid #008100
@@ -135,13 +148,13 @@ body {
     margin-bottom: 5px;
 }
 
-.btn-trait {
+.btn-trait, .btn-source {
     background-color: #cec549;
     color: #0248B1;
     border: 1px solid #0248B1
 }
 
-.btn-trait:hover {
+.btn-trait:hover, .btn-source {
     background-color: #faf282;
     color: #0248B1;
     border: 1px solid #0248B1
@@ -155,7 +168,9 @@ body {
     --bs-popover-body-padding-y: 10px;
 }
 
-#traits-container-modal, #traits-name-value-modal {
+#traits-container-modal,
+#traits-name-value-modal,
+#source-container-modal {
     padding: 8px;
     border: 1px solid lightgray;
     border-radius: 5px;

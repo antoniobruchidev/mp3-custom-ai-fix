@@ -7,7 +7,7 @@ from custom_assistant import ALLOWED_EXTENSIONS
 
 AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
 BASE_PREFIX = "the_custom_assistant_data"
-LOCAL_PREFIX = "data/tmp"
+LOCAL_PREFIX = "tmp"
 
 def get_client():
     """Method to get aws s3 client
@@ -77,6 +77,7 @@ def upload_file(key):
     """
     s3 = get_client()
     local_key = f'{LOCAL_PREFIX}/{key}'
+    print(local_key, AWS_BUCKET_NAME, f"{BASE_PREFIX}/{key}")
     try:
         s3.upload_file(local_key, AWS_BUCKET_NAME, f"{BASE_PREFIX}/{key}")
         print(f"File {key} uploaded to S3 successfully.")

@@ -9,8 +9,8 @@ from flask_migrate import Migrate
 from flask import Flask
 
 
-UPLOAD_FOLDER = "/static/images/"
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+UPLOAD_FOLDER = "tmp"
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
 HEROKU_DOMAIN = os.getenv("HEROKU_DOMAIN")
 
 load_dotenv()

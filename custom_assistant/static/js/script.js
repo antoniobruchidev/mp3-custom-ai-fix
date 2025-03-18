@@ -80,6 +80,25 @@ const createToast = (message) => {
     })
 }
 
+/**
+ * Method to send data and render response.
+ * @param {string} url 
+ * @param {FormData} formData 
+ */
+const postData = async (url, formData) => {
+    const response = await fetch(url, {
+        method: "POST",
+        body: formData
+    })
+    const data = await response.json()
+    if (data.status == 200) {
+        createToast(data.message)
+    } else {
+        createToast(data.error)
+    }
+}
+
+
 // check for errors
 const error = document.getElementById("error")
 
