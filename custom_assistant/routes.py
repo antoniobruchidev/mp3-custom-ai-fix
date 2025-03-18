@@ -9,6 +9,8 @@ from custom_assistant.tasks import celery, add
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from psycopg2 import OperationalError
 
+from custom_assistant.utils import get_proprietary_hardware_status
+
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -409,3 +411,14 @@ def logout():
     """
     logout_user()
     return redirect(url_for('home'))
+
+
+@app.get("/proprietary_hardware_status")
+def get_status():
+    """Method to get the proprietary hardware status - Test route
+    """
+    chat_server, embedding_server = get_proprietary_hardware_status()
+    return {
+        "chat_server": chat_server,
+        "embedding_server": embedding_server
+    }
