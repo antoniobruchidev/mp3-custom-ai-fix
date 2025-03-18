@@ -3,7 +3,20 @@ from flask_login import UserMixin
 from sqlalchemy.dialects.postgresql import JSON
 import os
 
-
+collection_likes = db.Table(
+    # table for the many to many relationship between collection and user tables
+    "collection_likes",
+    db.Column(
+        "collection_id",
+        db.Integer,
+        db.ForeignKey("collections.id", ondelete="CASCADE")
+    ),
+    db.Column(
+        "liked_by_user_id",
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE")
+    )
+)
 
 class User(db.Model, UserMixin):
     # schema for the user table
@@ -165,3 +178,50 @@ class ChatHistory(db.Model):
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE")
     )
+    
+    
+collection_sources = db.Table(
+    # table for the many to many relationship between collection and source tables
+    "collection_sources",
+    db.Column(
+        "collection_id",
+        db.Integer,
+        db.ForeignKey("collections.id", ondelete="CASCADE")
+    ),
+    db.Column(
+        "sources",
+        db.Integer,
+        db.ForeignKey("sources.id", ondelete="CASCADE")
+    )
+)
+
+
+class Collection(db.Model):
+    # schema for the collection table
+    __tablename__ = "collections"
+    id = db.Column(db.Integer, primary_key=True)
+    collection_name = db.Column(db.String(32), nullable=False)
+    documents_description = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE")
+    )
+    sources = db.relationship(
+        "Source",
+        secondary=collection_sources,
+        backref="collections",
+        lazy=True
+    )
+    share = db.Column(db.Boolean, default=False)
+    safe = db.Column(db.Boolean, default=False)
+    vectorstore_id = db.Column(db.String, nullable=True)
+
+
+class Source(db.Model):
+    # schema for the source table
+    __tablename__ = "sources"
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(64), nullable=False)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE")
+    )
+    aws_key = db.Column(db.String, nullable=False)
