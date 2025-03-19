@@ -99,14 +99,16 @@ body {
 .btn-save-collection,
 .btn-add-source,
 .btn-send-message,
-.btn-upload {
+.btn-upload,
+.btn-add-to {
     background-color: #0248B1;
     color: #E5F5FF;
 }
 
 .btn-add-trait:hover,
 .btn-login-register:hover,
-.btn-add-source:hover {
+.btn-add-source:hover,
+.btn-add-to:hover {
     background-color: #E5F5FF;
     color: #0248B1;
     border: 1px solid #0248B1;

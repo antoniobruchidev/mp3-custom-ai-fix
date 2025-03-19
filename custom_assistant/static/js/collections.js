@@ -1,6 +1,10 @@
 
 
-const addNewSource = async () => {
+const addNewSourceButton = document.getElementById("upload-source")
+const addToButtons = document.getElementsByClassName("btn-add-to")
+
+
+const addNewSource = () => {
     const form = document.getElementById("source-form")
     const formData = new FormData(form)
     const name = formData.get("source-name")
@@ -22,6 +26,27 @@ const addNewSource = async () => {
     }
 }
 
-const addNewSourceButton = document.getElementById("upload-source")
+const addToCollection = (element) => {
+    const collection = document.getElementById("collection-select")
+    if (collection.value == "Select you collection") {
+        createToast("Select a collection before adding a source")
+    } else {
+        const url = window.location.pathname.replace("/collections", "/add_source_to_collection")
+        let formData = new FormData()
+        formData.append("source-id", element.getAttribute("data-id"))
+        formData.append("collection-id", collection.value)
+        postData(url, formData)
+    }
+}
+
 
 addNewSourceButton.addEventListener("click", addNewSource)
+
+
+for (let button of addToButtons) {
+    if (button.getAttribute("data-id") != null) {
+        button.addEventListener("click", function(e) {
+            addToCollection(e.target)
+        })
+    }
+}

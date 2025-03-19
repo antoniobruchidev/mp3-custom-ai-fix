@@ -8,7 +8,7 @@ from proprietary_hardware import ALLOWED_EXTENSIONS
 
 AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
 BASE_PREFIX = "the_custom_assistant_data"
-LOCAL_PREFIX = "data/tmp"
+LOCAL_PREFIX = "tmp"
 
 def get_client():
     """Method to get aws s3 client
@@ -113,7 +113,7 @@ def upload_directory(user_db_tmp_path):
     """
     s3 = get_client()
     try:
-        for root, dirs, files in os.walk(f"data/tmp/{user_db_tmp_path}"):
+        for root, dirs, files in os.walk(f"tmp/{user_db_tmp_path}"):
             for file in files:
                 file_path = os.path.join(root, file)
                 key = file_path.replace(f"{LOCAL_PREFIX}/", "")

@@ -1,15 +1,16 @@
 import os
 from flask import flash, redirect, render_template, request, url_for
 from celery.result import AsyncResult
+import flask_login
+import requests
 from custom_assistant import app, db, argon2
 from custom_assistant.inference import chat
 from custom_assistant.mail import forgot_password_email, send_activation_email
-from custom_assistant.models import Assistant, CharacterTrait, Collection, User
-from custom_assistant.tasks import celery, add
-from flask_login import LoginManager, current_user, login_required, login_user, logout_user
-from psycopg2 import OperationalError
+from custom_assistant.models import Assistant, CharacterTrait, Collection, User, BackgroundIngestionTask
+from custom_assistant.tasks import celery, add, retry
+from flask_login import AnonymousUserMixin, LoginManager, current_user, login_required, login_user, logout_user
+from sqlalchemy.exc import OperationalError
 from psycopg2.errors import NotNullViolation
-
 from custom_assistant.utils import get_proprietary_hardware_status
 from custom_assistant.models import Source
 from custom_assistant.storage import get_files, upload_file
@@ -22,7 +23,14 @@ login_manager.login_view = "login"
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(user_id)
+    try:
+        user = db.session.get(User, user_id)
+        return user
+    except OperationalError:
+        try:
+            user = db.session.get(User, user_id)
+        except:
+            return AnonymousUserMixin()
         
 
 # Test routes
@@ -125,8 +133,8 @@ def playground():
         
 
 
-@login_required
 @app.post("/assistants/create")
+@login_required
 def create_assistant():
     """Method to create an assistant
 
@@ -152,7 +160,6 @@ def create_assistant():
     assistant_names = [assistant.name for assistant in user_assistants]
     trait_names = [f"{trait.trait}: {trait.value}" for trait in user_traits]
     traits_to_be_saved = []
-    traits_to_be_added = []
     for trait in data['traits']:
         print(trait)
         trait_value = trait['value'].replace("\n", "").replace(" ", "")
@@ -208,8 +215,8 @@ def create_assistant():
     return {"status": 200}
 
 
-@login_required
 @app.get("/collections")
+@login_required
 def collections():
     """Route to collections
 
@@ -218,28 +225,32 @@ def collections():
     """
     collections_limit = os.getenv("COLLECTION_SLOTS", 3)
     sources_limit = os.getenv("SOURCES_SLOTS", 10)
-    try:
-        collections = db.session.query(Collection).filter(
-            Collection.user_id==current_user.id
-        ).all()
-        c_sources = [collection.sources for collection in collections]
-        collections_with_sources = zip(collections, c_sources)
-        sources = db.session.query(Source).filter(
-            Source.user_id==current_user.id
-        ).all()
-    except OperationalError as e:
-        return redirect('colections')
-    collections_available = collections_limit - len(collections)
-    sources_available = sources_limit - len(sources)
-    return render_template(
-        "collections.html",
-        collections_limit=collections_limit,
-        sources_limit=sources_limit,
-        collections_with_sources=collections_with_sources,
-        collections_available=collections_available,
-        sources_available=sources_available,
-        sources=sources      
-    )
+    
+    if current_user.is_authenticated:
+        try:
+            collections = db.session.query(Collection).filter(
+                Collection.user_id==current_user.id
+            ).all()
+            c_sources = [collection.sources for collection in collections]
+            collections_with_sources = zip(collections, c_sources)
+            sources = db.session.query(Source).filter(
+                Source.user_id==current_user.id
+            ).all()
+        except OperationalError as e:
+            return redirect('colections')
+        collections_available = collections_limit - len(collections)
+        sources_available = sources_limit - len(sources)
+        return render_template(
+            "collections.html",
+            collections_limit=collections_limit,
+            sources_limit=sources_limit,
+            collections_with_sources=collections_with_sources,
+            collections_available=collections_available,
+            sources_available=sources_available,
+            sources=sources      
+        )
+    else:
+        return redirect(url_for("login"))
 
 
 @app.route("/register", methods=['GET', 'POST'])
@@ -449,10 +460,9 @@ def change_password(hash):
             return render_template(
                 "forgot_password.html", hash=hash, user=user
             )
-        
-        
-@login_required
+
 @app.route("/logout")
+@login_required
 def logout():
     """Route to logout
 
@@ -475,8 +485,8 @@ def get_status():
     }
 
 
-@login_required
 @app.post("/collections/create")
+@login_required
 def create_collection():
     """Route to create a collection
 
@@ -507,8 +517,8 @@ def create_collection():
         return redirect(url_for("collections"))
 
 
-@login_required
 @app.post("/sources/create")
+@login_required
 def create_source():
     """Route to create a source
 
@@ -553,3 +563,62 @@ def create_source():
         return {"status": 200, "message": f"Added source: {source.id}"}
     else:
         return {"status": 400, "error": "Error saving the file"}
+
+
+@app.post("/add_source_to_collection")
+@login_required
+def add_source_to_collection():
+    """Method to add a source to a collection
+
+    Returns:
+        dict: status and message/error
+    """
+    source_id = request.form.get("source-id")
+    collection_id = request.form.get("collection-id")
+    try:
+        task = BackgroundIngestionTask(
+            collection_id=collection_id,
+            source_id=source_id,
+        )
+        db.session.add(task)
+        db.session.commit()
+    except OperationalError as e:
+        print(f"Operational error: {e} - Retrying")
+        try:
+            task = BackgroundIngestionTask(
+                collection_id=collection_id,
+                source_id=source_id,
+            )
+            db.session.add(task)
+            db.session.commit()
+        except OperationalError as e:
+            print(f"Operational error: {e} - Stop")
+            return {"status": 500, "error": e}
+    chat_server, embedding_server = get_proprietary_hardware_status()
+    if embedding_server:
+        url = f"{os.getenv('PROPRIETARY_HARDWARE_URL')}/ingest_data"
+        payload = {
+            "task_id": task.id,
+            "secret_key": os.getenv("PROPRIETARY_HARDWARE_SECRET_KEY")
+        }
+        response = requests.post(url, json=payload)
+        data = response.json()
+        if response.status_code == 200:
+            return {
+                "message": f"Started job {data['result_id']}",
+                "status": 200
+            }
+    else:
+        result = retry.delay(task.id)
+        try:
+            task.heroku_task_id = result.id
+            db.session.add(task)
+            db.session.commit()
+        except OperationalError as e:
+            task.heroku_task_id = result.id
+            db.session.add(task)
+            db.session.commit()
+        return {
+            "status": 200,
+            "message": f"Task {task.id} will be tried again in 45 seconds. Job id: {result.id}"
+        }

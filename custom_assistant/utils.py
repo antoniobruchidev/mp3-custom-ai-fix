@@ -1,7 +1,8 @@
 import os
 import requests
 from werkzeug.utils import secure_filename
-from custom_assistant import ALLOWED_EXTENSIONS, UPLOAD_FOLDER
+from custom_assistant import ALLOWED_EXTENSIONS, UPLOAD_FOLDER, app, db
+from custom_assistant.models import BackgroundIngestionTask
 
 
 def get_proprietary_hardware_status() -> bool:
@@ -65,3 +66,31 @@ def save_file(request, user_id):
         return True, filename
     else:
         return False, None
+
+
+def proprietary_hardware_data_ingestion(task_id):
+    chat_server, embedding_server = get_proprietary_hardware_status()
+    result_id = None
+    if not embedding_server:
+        return {
+            "status": 500,
+            "result_id": result_id
+        }
+    url = f"{os.getenv('PROPRIETARY_HARDWARE_URL')}/ingest_data"
+    response = requests.post(url=url, json={
+        "task_id": task_id,
+        "secret_key": os.getenv("PROPRIETARY_HARDWARE_SECRET_KEY")
+    })
+    data = response.json()
+    print(f"--------------- {data}")
+    if data['status'] == 200:
+        result_id = data["result_id"]
+        return {
+            "status": data["status"],
+            "result_id": result_id
+            }
+    else:
+        return {
+            "status": data["status"],
+            "error": data["error"]
+        }

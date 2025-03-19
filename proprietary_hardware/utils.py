@@ -1,10 +1,14 @@
 from typing import List
 import os
 from langchain.embeddings.base import Embeddings
+from sqlalchemy.exc import OperationalError
 import requests
 from sentence_transformers import SentenceTransformer
 import torch
 import torch.multiprocessing as mp
+from werkzeug.utils import secure_filename
+from proprietary_hardware import ALLOWED_EXTENSIONS, UPLOAD_FOLDER, app, db
+from proprietary_hardware.models import BackgroundIngestionTask, Collection, Source, User
 
 
 def get_proprietary_hardware_status() -> bool:
@@ -88,3 +92,54 @@ def init_embedding_model():
     use_gpu = is_gpu_embedding_model_available()
     print(f"use of gpu for embeddings: {use_gpu}")
     return get_embedding_model(use_gpu)
+
+
+def update_collection_and_task(collection_id, source_id, timestamp):
+    """Method to update collection user and task
+
+    Args:
+        collection_id (int): the collection id
+        source_id (int): the source id
+        timestamp (float): timestamp of the last version of the 
+        vectorstore database uploaded to aws.
+
+    Returns:
+        bool: success or not
+    """
+    with app.app_context():
+        try:
+            collection = db.session.get(Collection, collection_id)
+            user = db.session.get(User, collection.user_id)
+            source = db.session.get(Source, source_id)
+            task = db.session.query(BackgroundIngestionTask).filter(
+                BackgroundIngestionTask.collection_id==collection_id,
+                BackgroundIngestionTask.source_id==source_id
+            ).first()
+            task.result = True
+            task.ended = True
+            db.session.add(task)
+            user.vectorstore_date_updated = timestamp
+            db.session.add(user)
+            collection.sources.append(source)
+            db.session.add(collection)
+            db.session.commit()
+        except OperationalError:
+            try:
+                collection = db.session.get(Collection, collection_id)
+                user = db.session.get(User, collection.user_id)
+                source = db.session.get(Source, source_id)
+                task = db.session.query(BackgroundIngestionTask).filter(
+                    BackgroundIngestionTask.collection_id==collection_id,
+                    BackgroundIngestionTask.source_id==source_id
+                ).first()
+                task.result = True
+                task.ended = True
+                db.session.add(task)
+                user.vectorstore_date_updated = timestamp
+                db.session.add(user)
+                collection.sources.append(source)
+                db.session.add(collection)
+                db.session.commit()
+            except OperationalError:
+                return False
+        return True

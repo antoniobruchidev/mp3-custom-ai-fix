@@ -27,6 +27,7 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable=False)
     verified = db.Column(db.Boolean, default=False)
     forgot_passwd_url = db.Column(db.String(), default="")
+    vectorstore_date_updated = db.Column(db.Float(), nullable=True)
     
     def sign_up_with_google(self):
         """Method to sign up with google
@@ -221,7 +222,32 @@ class Source(db.Model):
     __tablename__ = "sources"
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(64), nullable=False)
+    name = db.Column(db.String(16), nullable=True)
+    description = db.Column(db.String(255), nullable=False)
     user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE")
     )
     aws_key = db.Column(db.String, nullable=False)
+    
+    def __repr__(self):
+        return self.description
+
+
+class BackgroundIngestionTask(db.Model):
+    # schema for the background task table
+    __tablename__ = "background_ingestion_tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(
+        db.Integer,
+        db.ForeignKey("collections.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    source_id = db.Column(
+        db.Integer,
+        db.ForeignKey("sources.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    heroku_task_id = db.Column(db.String, nullable=True)
+    proprietary_task_id = db.Column(db.String, nullable=True)
+    result = db.Column(db.Boolean, nullable=True)
+    ended = db.Column(db.Boolean, default=False)
