@@ -183,6 +183,7 @@ def create_assistant():
         )
         db.session.add(assistant)
         db.session.commit()
+        db.session.close()
         for trait in data['traits']:
             trait_value = trait['value'].replace("\n", "").replace(" ", "")
             t = f"{trait['trait']}: {trait_value}"
@@ -196,6 +197,7 @@ def create_assistant():
                 )
                 db.session.add(character_trait)
                 db.session.commit()
+                db.session.close()
             else:
                 character_trait = db.session.query(CharacterTrait).filter(
                     CharacterTrait.user_id==user.id,
@@ -205,6 +207,7 @@ def create_assistant():
             assistant.traits.append(character_trait)
             db.session.add(assistant)
             db.session.commit()
+            db.session.close()
     except Exception as e:
         return {"status": 500, "error": e}
     except OperationalError as e:
@@ -276,7 +279,7 @@ def register():
             db.session.commit()
             send_activation_email(user)
             error = f"An email has been sent to {user.email}. Please verify your email address."
-            return render_template("login", g_client_id=g_client_id, error=error)
+            return render_template("login.html", g_client_id=g_client_id, error=error)
         else:
             error = f"Email {user.email} already present"
             return render_template(
@@ -304,6 +307,7 @@ def verify_user(user_id):
         user.verified = True
         db.session.add(user)
         db.session.commit()
+        db.session.close()
     except OperationalError as e:
         error = f"Operational error: {e} - please retry..."
         return render_template("login.html", g_client_id=g_client_id, error=error)
@@ -334,6 +338,7 @@ def login():
                     ).sign_up_with_google()
                     db.session.add(user)
                     db.session.commit()
+                    db.session.close()
                     login_user(user)
                     flash("registered with google")
                     return {"status": 200}
@@ -401,6 +406,7 @@ def forgot_password(email):
             user.forgot_passwd_url = forgot_password_email(user)
             db.session.add(user)
             db.session.commit()
+            db.session.close()
             return {
                 "status": 200,
                 "message": "An email has been sent to you to change your password."}
@@ -441,6 +447,7 @@ def change_password(hash):
                 )
                 db.session.add(user)
                 db.session.commit()
+                db.session.close()
                 message = "Password changed correctly"
             except OperationalError as e:
                 message = "Operational error: {e} - Please retry..."
@@ -505,6 +512,7 @@ def create_collection():
         )
         db.session.add(collection)
         db.session.commit()
+        db.session.close()
         flash(f"Added collection {collection.id}")
         return redirect(url_for("collections"))
     except OperationalError as e:
@@ -539,8 +547,9 @@ def create_source():
             keys = get_files()
             for key in keys:
                 if aws_key in key:
-                    return {"status": 400, "error": "Source already present, please refresh the page."}
-            print(aws_key)
+                    return {
+                        "status": 400,
+                        "error": "Source already present, please refresh the page."}
             source = Source(
                 filename=filename,
                 user_id=user_id,
@@ -550,6 +559,7 @@ def create_source():
             )
             db.session.add(source)
             db.session.commit()
+            db.session.close()
             assert upload_file(aws_key)
             print("uploaded to aws")
         except OperationalError as e:
@@ -580,6 +590,7 @@ def add_source_to_collection():
         )
         db.session.add(task)
         db.session.commit()
+        db.session.close()
     except OperationalError as e:
         print(f"Operational error: {e} - Retrying")
         try:
@@ -589,6 +600,7 @@ def add_source_to_collection():
             )
             db.session.add(task)
             db.session.commit()
+            db.session.close()
         except OperationalError as e:
             print(f"Operational error: {e} - Stop")
             return {"status": 500, "error": e}
@@ -612,10 +624,12 @@ def add_source_to_collection():
             task.heroku_task_id = result.id
             db.session.add(task)
             db.session.commit()
+            db.session.close()
         except OperationalError as e:
             task.heroku_task_id = result.id
             db.session.add(task)
             db.session.commit()
+            db.session.close()
         return {
             "status": 200,
             "message": f"Task {task.id} will be tried again in 45 seconds. Job id: {result.id}"
