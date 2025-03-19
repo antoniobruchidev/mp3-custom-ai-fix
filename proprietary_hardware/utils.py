@@ -71,7 +71,7 @@ def is_gpu_embedding_model_available():
         bool: true if gpu is available
     """
     with torch.no_grad():
-        if torch.cuda.is_available() and bool(int(os.getenv("USE_GPU"))):
+        if torch.cuda.is_available() and bool(int(os.getenv("USE_PROPRIETARY_GPU"))):
             try:
                 mp.set_start_method("spawn")
             except:

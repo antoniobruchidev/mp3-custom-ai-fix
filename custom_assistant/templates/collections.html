@@ -19,7 +19,11 @@
             <select id="collection-select" class="form-select" aria-label="Select you collection">
                 <option selected>Select you collection</option>
                 {% for collection, sources in collections_with_sources %}
-                    <option value="{{ collection.id }}">{{ collection.collection_name }} - {{ sources|truncate(24) }}</option>
+                    <option value="{{ collection.id }}">{{ collection.collection_name }}
+                        {% for source in sources %}
+                         - {{ source.filename|truncate(32) }}
+                        {% endfor %}
+                    </option>
                 {% endfor %}
             </select>
             <form action="{{ url_for("create_collection") }}" method="post" id="collection-form">
@@ -45,6 +49,32 @@
                 </button>
             </form>
             <div id="sources-container" class="mt-2">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="chat-container mt-4">
+    <div class="card">
+        <div class="card-header">
+            Your question:
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="question" class="form-label">Question:</label>
+                <textarea class="form-control" id="question" name="question" rows="3"></textarea>
+            </div>
+            <button id="send-message" class="btn btn-send-message" type="button">
+                Send message
+            </button>
+            <div class="card mt-4">
+                <div class="card-header">
+                    Answer:
+                </div>
+                <div class="card-body" id="answer-container">
+                </div>
             </div>
         </div>
     </div>

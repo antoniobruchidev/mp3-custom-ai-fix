@@ -61,10 +61,20 @@ def bot_answer() -> dict:
     Returns:
         dict: answer and tokens usage
     """
-    prompt = request.form.get("base-prompt")
-    traits = request.form.get("traits")
-    message= request.form.get("message")
-    answer, prompt_tokens, comp_tokens = chat(prompt, message, traits)
+    prompt = request.form.get("base-prompt", None)
+    traits = request.form.get("traits", None)
+    message= request.form.get("message", None)
+    question = request.form.get("question", None)
+    collection_id = request.form.get("collection-id", None)
+    print(question,collection_id)
+    if question is not None and collection_id is not None:
+        answer = chat(question=question, collection_id=collection_id)
+        prompt_tokens = None
+        comp_tokens = None
+    else:
+        answer, prompt_tokens, comp_tokens = chat(
+            prompt, message, traits
+        )
     return {
         "status": 200,
         "answer": answer,

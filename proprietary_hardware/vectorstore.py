@@ -209,20 +209,7 @@ def query_with_retriever(question, collection, user_id):
             "score_threshold": 0.5,
         },
     )
-    docs = retriever.invoke(question)
-    collection_with_embeddings = client.get_collection(collection)
-    embedded_question = init_embedding_model().embed_query(question)
-    context = ""
-    for doc in docs:
-        page = f"Page number: {doc.metadata['page_number']}\n\n"
-        documents = collection_with_embeddings.query(
-            query_embeddings=[embedded_question],
-            where={
-                "page_number": page
-            }
-        )
-        context = context + doc.page_content + "\n".join(documents["documents"][0])
-        
+    
     template = """You are an amazing multilingual assistant.
     You MUST answer in the language used by the user.
     Answer the question based ONLY on the following context:

@@ -25,7 +25,15 @@ You MUST NOT share your logic.
 
 
 
-def chat(prompt, message, traits=None, chat_history=None):
+
+def chat(
+    prompt=None,
+    message=None,
+    traits="",
+    chat_history=None,
+    question=None,
+    collection_id=None
+    ):
     """Method to create
 
     Args:
@@ -33,8 +41,27 @@ def chat(prompt, message, traits=None, chat_history=None):
         traits (_type_): _description_
         message (_type_): _description_
     """
+    response = None
+    print(prompt, message, traits, question, collection_id, chat_history)
+    if question is not None and collection_id is not None:
+        print("HERE")
+        payload = {
+            "question": question,
+            "collection_id": collection_id
+        }
+        retriever_url = f"{url.split('11434')[0]}5001/query"
+        response = requests.request("POST", retriever_url, json=payload)
+        data = response.json()
+        print(data)
+        if data['status'] == 200:
+            print(True)
+            return {"status": 200, "message": data["message"]}
+        else:
+            return {"status": 400, "error": data["error"]}
     if chat_history is None:
-        if prompt is not None and traits is not None:
+        print("CHAT HISTORY is None")
+        if prompt is not None and traits != "":
+            print("TRAIT is not ''")
             messages = [
                 {
                 "role": "system", "content": system_prompt.format(
@@ -46,12 +73,22 @@ def chat(prompt, message, traits=None, chat_history=None):
                 "role": "user", "content": message
                 },
             ]
-        elif prompt is not None and traits is None:
-            message = [
+        elif prompt is not None and traits == "":
+            print("TRAIT is ''")
+            messages = [
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": message},
             ]
+        payload = {
+            "model": unregistered_users_model,
+            "messages": messages,
+            "max_tokens": 131000,
+            "temperature": 1,
+            "top_p": 0.8,
+            "stream": False,
+        }
     else:
+        print("CHAT HISTORY")
         messages = chat_history
     payload = {
         "model": unregistered_users_model,
@@ -63,10 +100,9 @@ def chat(prompt, message, traits=None, chat_history=None):
     }
 
     response = requests.request("POST", url, json=payload)
-
     ai_message = response.json()
-    print(ai_message)
     prompt_tokens = ai_message['usage']['prompt_tokens']
     completion_tokens = ai_message['usage']['completion_tokens']
     answer = ai_message['choices'][0]['message']['content']
+
     return answer, prompt_tokens, completion_tokens

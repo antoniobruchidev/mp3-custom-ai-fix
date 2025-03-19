@@ -123,29 +123,31 @@ def query():
     Returns:
         _type_: _description_
     """
+    answer = ""
+    error = ""
+    question = request.json.get("question")
     try:
         collection = db.session.get(
-            Collection, request.form.get("collection_id")
+            Collection, request.json.get("collection_id")
         )
     except OperationalError as e:
         print(f"Operational error: {e} - Retrying")
         try:
             collection = db.session.get(
-                Collection, request.form.get("collection_id")
+                Collection, request.json.get("collection_id")
             )
         except OperationalError as e:
-            return {
-                "status": 500,
-                "error": e
-            }
+            error = e
+    answer = query_with_retriever(
+        question=request.json.get("question"),
+        collection=collection.collection_name,
+        user_id=collection.user_id
+    )
     return {
         "status": 200,
-        "message": query_with_retriever(
-            question=request.form.get("question"),
-            collection=collection.collection_name,
-            user_id=collection.user_id
-        )
-    }
+        "message": answer,
+        "error": error
+        }
     
     
         

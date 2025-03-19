@@ -38,7 +38,47 @@ const addToCollection = (element) => {
         postData(url, formData)
     }
 }
+/**
+ * Method to show the bot answer
+ * @param {string} answer 
+ * @returns {string} the card to be shown as innerHtml
+ */
+const showAnswer = (answer) => {
+    const alert = document.createElement("div")
+    alert.classList.add("alert", "alert-light", "d-flex", "align-items-center")
+    alert.setAttribute("role", "alert")
+    alert.innerHTML = `Assistant: ${answer}`
+    const chatHistory = document.getElementById("answer-container")
+    chatHistory.appendChild(alert)
+}
 
+
+/**
+ * Method to call the chatbot
+ */
+const chat = async () => {
+    const question = document.getElementById("question")
+    const collection = document.getElementById("collection-select")
+    console.log(collection.value)
+    const url = window.location.pathname.replace("/collections", "/chat")
+    const formData = new FormData()
+    formData.append("collection-id", collection.value)
+    formData.append("question", question.value)
+    const response = await fetch(url,{
+        method: "POST",
+        body: formData
+    })
+    const data = await response.json()
+    if (data.status == 200) {
+        showAnswer(data.answer.message)
+    } else {
+        createToast(data.answer.error)
+    }
+}
+
+const sendButton = document.getElementById("send-message")
+
+sendButton.addEventListener("click", chat)
 
 addNewSourceButton.addEventListener("click", addNewSource)
 

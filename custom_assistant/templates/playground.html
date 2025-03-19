@@ -62,7 +62,12 @@
             <button id="send-message" class="btn btn-send-message" type="button">
                 Send message
             </button>
-                <div id="answer-container" class="mt-2">
+            <div class="card mt-4">
+                <div class="card-header">
+                    History - Tokens usage: <p class="d-inline-block">Prompt: <span id="prompt-tokens">0</span> - Completion: <span id="completion-tokens">0</span></p>
+                </div>
+                <div class="card-body" id="answer-container">
+                </div>
             </div>
         </div>
     </div>

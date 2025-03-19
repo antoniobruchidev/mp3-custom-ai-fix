@@ -80,13 +80,12 @@ const setTrait = () => {
  * @returns {string} the card to be shown as innerHtml
  */
 const showAnswer = (answer) => {
-    return `
-<div class="card">
-    <div class="card-body" style="background-color: white;">
-        ${answer}
-    </div>
-</div>
-`
+    const alert = document.createElement("div")
+    alert.classList.add("alert", "alert-light", "d-flex", "align-items-center")
+    alert.setAttribute("role", "alert")
+    alert.innerHTML = `Assistant: ${answer}`
+    const chatHistory = document.getElementById("answer-container")
+    chatHistory.appendChild(alert)
 }
 
 /**
@@ -170,15 +169,22 @@ const chat = async () => {
     formData.append("base-prompt", base_prompt.value)
     formData.append("traits", traitsPrompt)
     formData.append("message", message.value)
-    const response = await fetch(url, {method:"POST", body: formData})
+    const response = await fetch(url, {
+        method: "POST",
+        body: formData
+    })
     const data = await response.json()
+    console.log(data)
     if (data.status == 200) {
-        const chatContainer = document.getElementById("answer-container")
-        chatContainer.innerHTML = showAnswer(data.answer)
-        console.log(data.answer)
-        createToast(`prompt tokens: {${data.prompt_tokens} completion tokens: ${data.comp_tokens}}`)
-    }
-    else {
+        showAnswer(data.answer)
+        const promptTokens = document.getElementById("prompt-tokens")
+        const completionTokens = document.getElementById("completion-tokens")
+        let newPromptTokens = parseInt(promptTokens.innerText) + parseInt(data.prompt_tokens)
+        let newCompletionTokens = parseInt(completionTokens.innerText) + parseInt(data.comp_tokens)
+        promptTokens.innerText = newPromptTokens
+        completionTokens.innerText = newCompletionTokens
+        createToast(`PROMPT TOKENS: ${data.prompt_tokens} - COMPLETION TOKENS: ${data.comp_tokens}`)
+    } else {
         createToast(data.error)
     }
 }
