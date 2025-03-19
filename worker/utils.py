@@ -1,8 +1,7 @@
 import os
 import requests
 from werkzeug.utils import secure_filename
-from custom_assistant import ALLOWED_EXTENSIONS, UPLOAD_FOLDER, app, db
-from custom_assistant.models import BackgroundIngestionTask
+from worker import ALLOWED_EXTENSIONS, UPLOAD_FOLDER
 
 
 def get_proprietary_hardware_status() -> bool:

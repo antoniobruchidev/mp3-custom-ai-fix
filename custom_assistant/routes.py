@@ -1,20 +1,18 @@
 import os
 from flask import flash, redirect, render_template, request, url_for
 from celery.result import AsyncResult
-import flask_login
 import requests
 from custom_assistant import app, db, argon2
 from custom_assistant.inference import chat
 from custom_assistant.mail import forgot_password_email, send_activation_email
 from custom_assistant.models import Assistant, CharacterTrait, Collection, User, BackgroundIngestionTask
-from custom_assistant.tasks import celery, add, retry
 from flask_login import AnonymousUserMixin, LoginManager, current_user, login_required, login_user, logout_user
 from sqlalchemy.exc import OperationalError
 from psycopg2.errors import NotNullViolation
-from custom_assistant.utils import get_proprietary_hardware_status
 from custom_assistant.models import Source
 from custom_assistant.storage import get_files, upload_file
-from custom_assistant.utils import save_file
+from worker.utils import save_file, get_proprietary_hardware_status
+from worker.tasks import celery, add, retry
 
 
 login_manager = LoginManager()
