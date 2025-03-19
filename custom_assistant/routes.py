@@ -136,6 +136,8 @@ def playground():
             traits=traits
             )
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
         print(e)
         return redirect(playground)
         
@@ -163,6 +165,12 @@ def create_assistant():
             Assistant.user_id==user.id
         ).all()
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
+        return {"status": 500, "error": f"Please try again... Operational error: {e}"}
+    except Exception as e:
+        db.session.rollback()
+        db.session.close()
         return {"status": 500, "error": f"Please try again... Operational error: {e}"}
         
     assistant_names = [assistant.name for assistant in user_assistants]
@@ -218,10 +226,14 @@ def create_assistant():
             db.session.add(assistant)
             db.session.commit()
             db.session.close()
-    except Exception as e:
-        return {"status": 500, "error": e}
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
         return {"status": 500, "error": f"Please try again... Operational error: {e}"}
+    except Exception as e:
+        db.session.rollback()
+        db.session.close()
+        return {"status": 500, "error": e}
     flash(f"name: {data['assistant_name']} - base prompt: {data['base_prompt']} - traits: {data['traits']}")
     return {"status": 200}
 
@@ -248,6 +260,8 @@ def collections():
                 Source.user_id==current_user.id
             ).all()
         except OperationalError as e:
+            db.session.rollback()
+            db.session.close()
             return redirect('colections')
         collections_available = collections_limit - len(collections)
         sources_available = sources_limit - len(sources)
@@ -282,11 +296,14 @@ def register():
                 request.form.get("confirm-password", None)
             )
         except OperationalError as e:
+            db.session.rollback()
+            db.session.close()
             error = f"Operational error - please retry..."
             return render_template("register.html", g_client_id=g_client_id, error=error)
         if user is not None:
             db.session.add(user)
             db.session.commit()
+            db.session.close()
             send_activation_email(user)
             error = f"An email has been sent to {user.email}. Please verify your email address."
             return render_template("login.html", g_client_id=g_client_id, error=error)
@@ -319,6 +336,8 @@ def verify_user(user_id):
         db.session.commit()
         db.session.close()
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
         error = f"Operational error: {e} - please retry..."
         return render_template("login.html", g_client_id=g_client_id, error=error)
     return render_template("login.html", g_client_id=g_client_id, error="Account verified.")
@@ -393,6 +412,8 @@ def login():
                             )
         return render_template("login.html", g_client_id=g_client_id)
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
         return render_template(
             "login.html",
             g_client_id=g_client_id,
@@ -423,6 +444,8 @@ def forgot_password(email):
         else:
             return {"status": 404, "error": "Email not found"}
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
         return {"status": 500, "error": "Operational error: {e} - Please retry..."}
 
 
@@ -441,6 +464,8 @@ def change_password(hash):
     try:
         user = db.session.query(User).filter(User.forgot_passwd_url==hash).first()
     except OperationalError:
+        db.session.rollback()
+        db.session.close()
         return redirect(url_for('change_password', hash=hash))
     if user is None:
         message = "No users password change at this url"
@@ -460,6 +485,8 @@ def change_password(hash):
                 db.session.close()
                 message = "Password changed correctly"
             except OperationalError as e:
+                db.session.rollback()
+                db.session.close()
                 message = "Operational error: {e} - Please retry..."
                 return render_template(
             "login.html",
@@ -526,9 +553,13 @@ def create_collection():
         db.session.close()
         return redirect(url_for("collections"))
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
         flash(f"Operational error: {e} - Please retry...")
         return redirect(url_for("collections"))
     except Exception as e:
+        db.session.rollback()
+        db.session.close()
         flash(f"Unknown error: {e} - Please retry...")
         return redirect(url_for("collections"))
 
@@ -544,6 +575,8 @@ def create_source():
     try:
         user_id = current_user.id
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
         return {
             "status": 500,
             "error": f"Operational error: {e} - Please retry..."
@@ -574,10 +607,16 @@ def create_source():
             assert upload_file(aws_key)
             print("uploaded to aws")
         except OperationalError as e:
+            db.session.rollback()
+            db.session.close()
             return {"status": 500, "error": f"Operational error: {e} - Please retry..."}
         except NotNullViolation as e:
+            db.session.rollback()
+            db.session.close()
             return {"status": 500, "error": f"Missing data: {e} - Please retry..."}
         except Exception as e:
+            db.session.rollback()
+            db.session.close()
             return {"status": 500, "error": f"Unknown error: {e}"}
         return {"status": 200, "message": f"Added source: {source_id}"}
     else:
@@ -604,6 +643,8 @@ def add_source_to_collection():
         task_id = task.id
         db.session.close()
     except OperationalError as e:
+        db.session.rollback()
+        db.session.close()
         print(f"Operational error: {e} - Retrying")
         try:
             task = BackgroundIngestionTask(
@@ -615,6 +656,8 @@ def add_source_to_collection():
             task_id = task.id
             db.session.close()
         except OperationalError as e:
+            db.session.rollback()
+            db.session.close()
             print(f"Operational error: {e} - Stop")
             return {"status": 500, "error": e}
     chat_server, embedding_server = get_proprietary_hardware_status()
@@ -640,6 +683,8 @@ def add_source_to_collection():
             db.session.commit()
             db.session.close()
         except OperationalError as e:
+            db.session.rollback()
+            db.session.close()
             task = db.session.get(BackgroundIngestionTask, task_id)
             task.heroku_task_id = result.id
             db.session.add(task)

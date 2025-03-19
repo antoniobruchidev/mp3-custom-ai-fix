@@ -14,7 +14,7 @@ from unstructured.partition.pdf import partition_pdf
 import chromadb
 import os
 from langchain_ollama import ChatOllama
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, PendingRollbackError
 
 
 
@@ -50,7 +50,8 @@ def download_client(user_id):
             keys = get_files(f"{user_id}/chroma_db")
             for key in keys:
                 aws_key = key.replace(f"{BASE_PREFIX}/", "")
-                assert download_file(aws_key)
+                x = download_file(aws_key)
+                print(x)
             print(f"Downloaded vectorstore for user id: {user_id}")
         except TypeError:
             print(f"No existing vectorstore for user id: {user_id}")
@@ -58,12 +59,14 @@ def download_client(user_id):
             error = f"Error Downloading files from AWS S3 Bucket - {e} - Retrying"
             try:
                 aws_key = key.replace(f"{BASE_PREFIX}/", "")
-                assert download_file(aws_key)
+                x = download_file(aws_key)
+                print(x)
             except Exception as e:
                 error = f"Error Downloading files from AWS S3 Bucket - {e} - Retrying"
                 try:
                     aws_key = key.replace(f"{BASE_PREFIX}/", "")
-                    assert download_file(aws_key)
+                    x = download_file(aws_key)
+                    print(x)
                 except Exception as e:
                     error = f"Error Downloading files from AWS S3 Bucket - {e} - Stop"
     return get_client(user_id), error
@@ -84,14 +87,31 @@ def ingest(collection_id, source_id, user_id):
         try:
             collection = db.session.get(Collection, int(collection_id))
             source = db.session.get(Source, int(source_id))
+            response = download_file(source.aws_key)
+            print(f"{datetime.datetime.now().isoformat()} - response: {response}")
+            filename = f"{LOCAL_PREFIX}/{collection.user_id}/{source.filename}"
+            file_name = source.filename
         except OperationalError as e:
+            db.session.rollback()
+            db.session.close()
             print(f"{datetime.datetime.now().isoformat()} - Operational error: {e}")
             print(f"{datetime.datetime.now().isoformat()} - Retrying")
             collection = db.session.get(Collection, int(collection_id))
             source = db.session.get(Source, int(source_id))
-    response = download_file(source.aws_key)
-    print(f"{datetime.datetime.now().isoformat()} - response: {response}")
-    filename = f"{LOCAL_PREFIX}/{collection.user_id}/{source.filename}"
+            response = download_file(source.aws_key)
+            print(f"{datetime.datetime.now().isoformat()} - response: {response}")
+            filename = f"{LOCAL_PREFIX}/{collection.user_id}/{source.filename}"
+        except PendingRollbackError as e:
+            db.session.rollback()
+            print(f"{datetime.datetime.now().isoformat()} - Operational error: {e}")
+            print(f"{datetime.datetime.now().isoformat()} - Retrying")
+            collection = db.session.get(Collection, int(collection_id))
+            source = db.session.get(Source, int(source_id))
+            response = download_file(source.aws_key)
+            print(f"{datetime.datetime.now().isoformat()} - response: {response}")
+            filename = f"{LOCAL_PREFIX}/{collection.user_id}/{source.filename}"
+            file_name = source.filename
+        db.session.close()
     docs = []
     documents = []
     ids = []
@@ -116,11 +136,11 @@ def ingest(collection_id, source_id, user_id):
         metadata["source"] = metadata["filename"]
         del metadata["filename"]
         page_number = metadata['page_number']
-        id = f"{counter}-{source.filename}"
+        id = f"{counter}-{file_name}"
         if el.category == 'Image':
             image_bytes = metadata['image_base64']
-            image_name = f"{source.id}-{page_number}-{image_counter}.jpg"
-            aws_path = f"{collection.user_id}/{source.id}/images"
+            image_name = f"{source_id}-{page_number}-{image_counter}.jpg"
+            aws_path = f"{user_id}/{source_id}/images"
             local_path = f"{LOCAL_PREFIX}/{aws_path}"
             key = f"{aws_path}/{image_name}"
             if not os.path.exists(local_path):
@@ -133,8 +153,8 @@ def ingest(collection_id, source_id, user_id):
             upload_file_no_overwrite(key)
         elif el.category == 'Table':
             image_bytes = metadata['image_base64']
-            table_name = f"{source.id}-{page_number}-{image_counter}.jpg"
-            aws_path = f"{collection.user_id}/{source.id}/tables"
+            table_name = f"{source_id}-{page_number}-{image_counter}.jpg"
+            aws_path = f"{user_id}/{source_id}/tables"
             local_path = f"{LOCAL_PREFIX}/{aws_path}"
             key = f"{aws_path}/{table_name}"
             if not os.path.exists(local_path):
@@ -152,7 +172,7 @@ def ingest(collection_id, source_id, user_id):
         documents.append(Document(page_content=text, metadata=metadata))
         ids.append(id)
         
-    client, error = download_client(collection.user_id)
+    client, error = download_client(user_id)
     
     vector_store = Chroma(
         collection_name=collection.collection_name,

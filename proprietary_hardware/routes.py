@@ -1,7 +1,7 @@
 import os
 from flask import request
 from celery.result import AsyncResult
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, PendingRollbackError
 from proprietary_hardware.utils import get_proprietary_hardware_status
 from proprietary_hardware import app, db
 from proprietary_hardware.tasks import ingest_data, proprietary_celery, add
@@ -109,9 +109,10 @@ def ingest():
                 db.session.commit()
             except Exception as e:
                 {"status": 500, "error": e}
+        db.session.close()
         return {
             "status": 200,
-            "message" : f"Started job {result.id} for task {task.id}"}
+            "message" : f"Started job {result.id} for task {task_id}"}
     else:
         return {"status": 403}
     
@@ -143,6 +144,7 @@ def query():
         collection=collection.collection_name,
         user_id=collection.user_id
     )
+    db.session.close()
     return {
         "status": 200,
         "message": answer,

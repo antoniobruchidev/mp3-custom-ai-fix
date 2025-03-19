@@ -1,7 +1,7 @@
 from typing import List
 import os
 from langchain.embeddings.base import Embeddings
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, PendingRollbackError
 import requests
 from sentence_transformers import SentenceTransformer
 import torch
@@ -71,7 +71,7 @@ def is_gpu_embedding_model_available():
         bool: true if gpu is available
     """
     with torch.no_grad():
-        if torch.cuda.is_available() and bool(int(os.getenv("USE_PROPRIETARY_GPU"))):
+        if torch.cuda.is_available() and bool(int(os.getenv("USE_GPU"))):
             try:
                 mp.set_start_method("spawn")
             except:
@@ -123,7 +123,8 @@ def update_collection_and_task(collection_id, source_id, timestamp):
             collection.sources.append(source)
             db.session.add(collection)
             db.session.commit()
-        except OperationalError:
+        except PendingRollbackError as e:
+            db.session.rollback()
             try:
                 collection = db.session.get(Collection, collection_id)
                 user = db.session.get(User, collection.user_id)
@@ -141,5 +142,30 @@ def update_collection_and_task(collection_id, source_id, timestamp):
                 db.session.add(collection)
                 db.session.commit()
             except OperationalError:
+                db.session.rollback()
+                db.session.close()
+                return False
+        except OperationalError:
+            db.session.rollback()
+            db.session.close()
+            try:
+                collection = db.session.get(Collection, collection_id)
+                user = db.session.get(User, collection.user_id)
+                source = db.session.get(Source, source_id)
+                task = db.session.query(BackgroundIngestionTask).filter(
+                    BackgroundIngestionTask.collection_id==collection_id,
+                    BackgroundIngestionTask.source_id==source_id
+                ).first()
+                task.result = True
+                task.ended = True
+                db.session.add(task)
+                user.vectorstore_date_updated = timestamp
+                db.session.add(user)
+                collection.sources.append(source)
+                db.session.add(collection)
+                db.session.commit()
+            except OperationalError:
+                db.session.rollback()
+                db.session.close()
                 return False
         return True
