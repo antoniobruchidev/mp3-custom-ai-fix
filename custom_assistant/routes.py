@@ -280,7 +280,7 @@ def register():
         else:
             error = f"Email {user.email} already present"
             return render_template(
-                "login",
+                "login.html",
                 error=error,
                 g_client_id=g_client_id
             )
