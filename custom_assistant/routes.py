@@ -512,8 +512,8 @@ def create_collection():
         )
         db.session.add(collection)
         db.session.commit()
-        db.session.close()
         flash(f"Added collection {collection.id}")
+        db.session.close()
         return redirect(url_for("collections"))
     except OperationalError as e:
         flash(f"Operational error: {e} - Please retry...")
@@ -559,6 +559,7 @@ def create_source():
             )
             db.session.add(source)
             db.session.commit()
+            source_id = source.id
             db.session.close()
             assert upload_file(aws_key)
             print("uploaded to aws")
@@ -568,7 +569,7 @@ def create_source():
             return {"status": 500, "error": f"Missing data: {e} - Please retry..."}
         except Exception as e:
             return {"status": 500, "error": f"Unknown error: {e}"}
-        return {"status": 200, "message": f"Added source: {source.id}"}
+        return {"status": 200, "message": f"Added source: {source_id}"}
     else:
         return {"status": 400, "error": "Error saving the file"}
 
@@ -590,6 +591,7 @@ def add_source_to_collection():
         )
         db.session.add(task)
         db.session.commit()
+        task_id = task.id
         db.session.close()
     except OperationalError as e:
         print(f"Operational error: {e} - Retrying")
@@ -600,6 +602,7 @@ def add_source_to_collection():
             )
             db.session.add(task)
             db.session.commit()
+            task_id = task.id
             db.session.close()
         except OperationalError as e:
             print(f"Operational error: {e} - Stop")
@@ -608,24 +611,26 @@ def add_source_to_collection():
     if embedding_server:
         url = f"{os.getenv('PROPRIETARY_HARDWARE_URL')}/ingest_data"
         payload = {
-            "task_id": task.id,
+            "task_id": task_id,
             "secret_key": os.getenv("PROPRIETARY_HARDWARE_SECRET_KEY")
         }
         response = requests.post(url, json=payload)
         data = response.json()
         if response.status_code == 200:
             return {
-                "message": f"Started job {data['result_id']}",
+                "message": f"Started job {data['message']}",
                 "status": 200
             }
     else:
         result = retry.delay(task.id)
         try:
+            task = db.session.get(BackgroundIngestionTask, task_id)
             task.heroku_task_id = result.id
             db.session.add(task)
             db.session.commit()
             db.session.close()
         except OperationalError as e:
+            task = db.session.get(BackgroundIngestionTask, task_id)
             task.heroku_task_id = result.id
             db.session.add(task)
             db.session.commit()
