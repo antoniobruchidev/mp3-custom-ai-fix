@@ -9,6 +9,7 @@ const assistantId = document.getElementById("assistant-id")
 const traitsContainer = document.getElementById("traits-container")
 const deleteModal = document.getElementById('delete-modal')
 const deleteConfirmationButton = document.getElementById("delete-confirmation")
+const sendButton = document.getElementById("send-message")
 
 let activeAssistant = {
     id: null,
@@ -228,6 +229,20 @@ const saveOrEditAssistant = async () => {
     }
 }
 
+/**
+ * Method to show the bot answer
+ * @param {string} answer 
+ * @returns {string} the card to be shown as innerHtml
+ */
+const showAnswer = (answer) => {
+    const alert = document.createElement("div")
+    alert.classList.add("alert", "alert-light", "d-flex", "align-items-center")
+    alert.setAttribute("role", "alert")
+    alert.innerHTML = `Assistant: ${answer}`
+    const chatHistory = document.getElementById("answer-container")
+    chatHistory.appendChild(alert)
+}
+
 saveAssistantButton.addEventListener("click", saveOrEditAssistant)
 
 clear.addEventListener("click", resetAssistantFields)
@@ -302,10 +317,54 @@ const addTraitToAssistant = async (element) => {
 
 }
 
+/**
+ * Method to call the chatbot
+ */
+const chat = async () => {
+    const base_prompt = document.getElementById("assistant-base-prompt")
+    let traitsPrompt = ""
+    const message = document.getElementById("message")
+    const traits = document.getElementsByClassName("btn-trait")
+    if (traits.length > 0) {
+        for (let i=0; i < traits.length; i++) {
+            console.log(traits[i])
+            let title = traits[i].getAttribute("data-bs-title")
+            let reasonWhy = traits[i].getAttribute("data-bs-content")
+            traitsPrompt += `${title} \n${reasonWhy}\n\n`
+        }
+    }
+    const url = window.location.pathname.replace("/assistants", "/chat")
+    const formData = new FormData()
+    formData.append("base-prompt", base_prompt.value)
+    formData.append("traits", traitsPrompt)
+    formData.append("message", message.value)
+    const response = await fetch(url, {
+        method: "POST",
+        body: formData
+    })
+    const data = await response.json()
+    console.log(data)
+    if (data.status == 200) {
+        showAnswer(data.answer)
+        const promptTokens = document.getElementById("prompt-tokens")
+        const completionTokens = document.getElementById("completion-tokens")
+        let newPromptTokens = parseInt(promptTokens.innerText) + parseInt(data.prompt_tokens)
+        let newCompletionTokens = parseInt(completionTokens.innerText) + parseInt(data.comp_tokens)
+        promptTokens.innerText = newPromptTokens
+        completionTokens.innerText = newCompletionTokens
+        createToast(`PROMPT TOKENS: ${data.prompt_tokens} - COMPLETION TOKENS: ${data.comp_tokens}`)
+    } else {
+        createToast(data.error)
+    }
+}
+
 for (let addTraitButton of addTraitButtons) {
     addTraitButton.addEventListener("click", event => {
         addTraitToAssistant(event.target)
     })
 }
+
+// add event listener to invoke the chatbot with the active settings
+sendButton.addEventListener("click", chat)
 
 
