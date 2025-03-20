@@ -35,7 +35,7 @@
                                 <a id="playground" class="nav-link" href="{{ url_for('playground') }}">Playground</a>
                             </li>
                             <li class="nav-item">
-                                <a id="collections" class="nav-link" href="{{ url_for('collections') }}">Collections</a>
+                                <a id="collections" class="nav-link" href="{{ url_for('get_collections') }}">Collections</a>
                             </li>
                         </ul>
                         {% if current_user.is_authenticated %}
@@ -46,7 +46,7 @@
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="#">Profile</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="#">Assistants</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('get_assistants')}}">Assistants</a></li>
                                     <li><a class="dropdown-item" href="#">Traits</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="{{url_for('logout')}}">Logout</a></li>

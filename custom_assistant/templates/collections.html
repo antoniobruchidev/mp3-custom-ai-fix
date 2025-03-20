@@ -16,7 +16,7 @@
             </span>
         </div>
         <div class="card-body">
-            <select id="collection-select" class="form-select" aria-label="Select you collection">
+            <select id="collection-select" class="form-select" aria-label="Select you collection" data-url="{{ url_for('get_collection', collection_id='')}}">
                 <option selected>Select you collection</option>
                 {% for collection, sources in collections_with_sources %}
                     <option value="{{ collection.id }}">{{ collection.collection_name }}
@@ -27,6 +27,7 @@
                 {% endfor %}
             </select>
             <form action="{{ url_for("create_collection") }}" method="post" id="collection-form">
+                <input type="hidden" id="collection-id", name="collection-id">
                 <div class="my-3 w-50">
                     <label for="collection-name" class="form-label">Name</label>
                     <input id="collection-name" class="form-control" type="text" name="collection-name" required>
@@ -35,17 +36,23 @@
                     <label for="description" class="form-label">Description:</label>
                     <textarea class="form-control" id="collection-description" name="collection-description" rows="3" required></textarea>
                 </div>
-                <div class="btn-group" role="group" aria-label="Add sources">
-                    <button id="clear" class="btn btn-discard" type="reset">
+                <div class="btn-group" role="group" aria-label="Add collections">
+                    <button id="clear" class="btn btn-discard" type="button">
                         Clear
+                    </button>
+                    <button id="delete-collection" class="btn btn-discard rounded-start hidden" type="button">
+                        Delete Collection
+                    </button>
+                    <button id="edit-collection" class="btn btn-edit-collection hidden" type="button">
+                        Edit
                     </button>
                     <button id="save-collection" class="btn btn-save-collection" type="submit">
                         Save Collection
                     </button>
                 </div>
-                <button id="add-source" class="btn btn-add-source d-inline ms-3" type="button"
+                <button id="add-source" class="btn btn-manage d-inline ms-3" type="button"
                     data-bs-toggle="offcanvas" data-bs-target="#offcanvasSources" aria-controls="offcanvasSources">
-                    Add source
+                    Manage sources
                 </button>
             </form>
             <div id="sources-container" class="mt-2">
@@ -80,6 +87,25 @@
     </div>
 </div>
 
+<div class="modal" id="delete-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Delete confirmation</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to permanently delete <span id="type"></span>: <span id="record"></span></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-trait" data-bs-dismiss="modal" id="modal-close">Close</button>
+            <button type="button" class="btn btn-discard" id="delete-confirmation">Permanently delete</button>
+        </div>
+        </div>
+    </div>
+</div>
+
+
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasSources" aria-labelledby="offcanvasSourcesLabel">
     <div class="offcanvas-header">
@@ -107,9 +133,14 @@
                             <div id="source{{ source.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionSources">
                                 <div class="accordion-body">
                                     {{ source.description }}
-                                    <button class="btn btn-add-to" type="button" data-id="{{ source.id }}">
-                                        Add to active collection <i class="fa-solid fa-angles-right"></i>
-                                    </button>
+                                    <div class="btn-group mt-2" role="group" aria-label="Manage Source">
+                                        <button class="btn btn-discard" type="button"  data-bs-id="{{ source.id }}" data-bs-url="{{ url_for('delete_source', source_id=source.id )}}" data-bs-record="{{ source.name }}" data-bs-type="Source" data-bs-toggle="modal" data-bs-target="#delete-modal">
+                                            Delete Source
+                                        </button>
+                                        <button class="btn btn-add-to" type="button" data-id="{{ source.id }}">
+                                            Add to active Collection <i class="fa-solid fa-angles-right"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

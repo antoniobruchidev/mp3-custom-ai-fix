@@ -1,7 +1,70 @@
-
-
+const deleteCollectionButton = document.getElementById("delete-collection")
+const editCollectionButton = document.getElementById("edit-collection")
+const collectionSelector = document.getElementById("collection-select")
+const saveCollectionButton = document.getElementById("save-collection")
+const collectionName = document.getElementById("collection-name")
+const description = document.getElementById("collection-description")
+const collectionId = document.getElementById("collection-id")
+const clear = document.getElementById("clear")
 const addNewSourceButton = document.getElementById("upload-source")
 const addToButtons = document.getElementsByClassName("btn-add-to")
+const deleteModal = document.getElementById('delete-modal')
+const deleteConfirmationButton = document.getElementById("delete-confirmation")
+const sourcesContainer = document.getElementById("sources-container")
+
+const sendButton = document.getElementById("send-message")
+
+let activeCollection = {
+    id: null,
+    collectionName: null,
+    description: null,
+    sources: []
+}
+
+/**
+ * Method to enable the popovers present
+ */
+const updatePopovers = () => {
+    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
+    return popoverList
+}
+
+/**
+ * Method to create a button with the description of the source in a popover
+ * @param {string} trait 
+ * @param {integer} value 
+ * @param {string} reasonWhy 
+ * @param {integer | null} id 
+ * @returns 
+ */
+const createButtonWithPopover = (name, description, id) => {
+    const button = document.createElement("button")
+    button.classList.add("btn", "btn-lg", "btn-source")
+    button.setAttribute("data-bs-toggle", "popover")
+    button.setAttribute("data-bs-title", name)
+    button.setAttribute("data-bs-content", description)
+    button.setAttribute("data-bs-placement", "bottom")
+    button.setAttribute("data-bs-custom-class", "btn-popover")
+    if (id != null) {
+        button.setAttribute("data-id", id)
+    }
+    button.innerText = name.toUpperCase()
+    return button
+}
+
+/**
+ * Method to show the ingested sources for the active collection
+ * @param {*} sources 
+ */
+const showIngestedSources = (sources) => {
+    var button = null
+    for (let source of sources) {
+        button = createButtonWithPopover(source.name, source.description)
+        sourcesContainer.appendChild(button)
+    }
+
+}
 
 
 const addNewSource = () => {
@@ -76,7 +139,70 @@ const chat = async () => {
     }
 }
 
-const sendButton = document.getElementById("send-message")
+
+const resetCollectionFields = () => {
+    if (activeCollection.id != null){
+        collectionName.value = activeCollection.collectionName
+        description.value = activeCollection.description
+        collectionId.value =  activeCollection.id
+        collectionName.setAttribute("disabled", true)
+        description.setAttribute("disabled", true)
+        saveCollectionButton.setAttribute("disabled", true)
+        deleteCollectionButton.classList.remove("hidden")
+        clear.classList.add("hidden")
+        editCollectionButton.removeAttribute("disabled")
+    }
+}
+
+const setActiveCollection = (data) => {
+    activeCollection.id = data.collection_id
+    activeCollection.collectionName = data.collection_name
+    activeCollection.description = data.description
+    activeCollection.sources = data.sources
+    showIngestedSources(data.sources)
+    updatePopovers()
+}
+
+const getCollection = async (url) => {
+    const response = await fetch(url)
+    const data = await response.json()
+    console.log(data)
+    if (data.status == 200) {
+        clear.classList.add("hidden")
+        editCollectionButton.classList.remove("hidden")
+        deleteCollectionButton.classList.remove("hidden")
+        setActiveCollection(data)
+        $(collectionId).val(data.collection_id)
+        $(collectionName).val(data.collection_name)
+        $(description).val(data.description)
+        collectionName.setAttribute("disabled", true)
+        description.setAttribute("disabled", true)
+        saveCollectionButton.setAttribute("disabled", true)
+        deleteCollectionButton.setAttribute("data-bs-url", `/collections/${data.collection_id}/delete`)
+        deleteCollectionButton.setAttribute("data-bs-id", data.collection_id)
+        deleteCollectionButton.setAttribute("data-bs-type", "Collection")
+        deleteCollectionButton.setAttribute("data-bs-record", data.collection_name)
+        deleteCollectionButton.setAttribute("data-bs-toggle", "modal")
+        deleteCollectionButton.setAttribute("data-bs-target", "#delete-modal")
+        $(editCollectionButton).on("click", (e) => {
+            deleteCollectionButton.classList.add("hidden")
+            clear.classList.remove("hidden")
+            editCollectionButton.setAttribute("disabled", true)
+            collectionName.removeAttribute("disabled")
+            description.removeAttribute("disabled")
+            saveCollectionButton.removeAttribute("disabled")
+        })
+    }
+}
+
+clear.addEventListener("click", resetCollectionFields)
+
+collectionSelector.addEventListener("change", function(e) {
+    const collectionId = $(e.target).val()
+    const url = `${$(e.target).attr("data-url")}${collectionId}`
+    console.log(url)
+    getCollection(url)
+})
 
 sendButton.addEventListener("click", chat)
 
@@ -89,4 +215,40 @@ for (let button of addToButtons) {
             addToCollection(e.target)
         })
     }
+}
+
+
+if (deleteModal) {
+    deleteModal.addEventListener('show.bs.modal', event => {
+        // Button that triggered the modal
+        const button = event.relatedTarget
+        // Extract info from data-bs-* attributes
+        const url = button.getAttribute('data-bs-url')
+        const type = button.getAttribute('data-bs-type')
+        const record = button.getAttribute('data-bs-record')
+        // Update the modal's content.
+        const typeSpan = document.getElementById('type')
+        typeSpan.innerText = type
+        const recordSpan = document.getElementById('record')
+        recordSpan.innerText = record
+        // Update form action
+        deleteConfirmationButton.setAttribute('data-bs-url', url)
+    })
+    deleteConfirmationButton.addEventListener("click", event => {
+        const close = document.getElementById("modal-close")
+        close.addEventListener("click", e => {
+            event.target.removeEventListener("click")
+        })
+        const form = document.createElement("form")
+        const button = event.target
+        const url = button.getAttribute("data-bs-url")
+        const deleteButton = document.createElement("button")
+        deleteButton.setAttribute("type", "submit")
+        const body = document.getElementsByTagName("body")[0]
+        form.setAttribute("action", url)
+        form.setAttribute("method", "POST")
+        form.appendChild(deleteButton)
+        body.appendChild(form)
+        deleteButton.click()
+    })
 }

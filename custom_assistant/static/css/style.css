@@ -93,6 +93,12 @@ body {
     margin-top: 20px;
 }
 
+.btn:disabled {
+    background-color: #506a91;
+    color: #E5F5FF;
+    border: 1px solid #0248B1;
+}
+
 .btn-add-trait,
 .btn-login-register,
 .btn-save-assistant,
@@ -100,7 +106,12 @@ body {
 .btn-add-source,
 .btn-send-message,
 .btn-upload,
-.btn-add-to {
+.btn-add-to,
+.btn-edit-trait,
+.btn-save-trait,
+.btn-edit-collection,
+.btn-edit-assistant,
+.btn-manage {
     background-color: #0248B1;
     color: #E5F5FF;
 }
@@ -108,7 +119,11 @@ body {
 .btn-add-trait:hover,
 .btn-login-register:hover,
 .btn-add-source:hover,
-.btn-add-to:hover {
+.btn-add-to:hover,
+.btn-edit-trait:hover,
+.btn-edit-assistant:hover,
+.btn-manage:hover,
+.btn-send-message:hover {
     background-color: #E5F5FF;
     color: #0248B1;
     border: 1px solid #0248B1;
@@ -116,7 +131,9 @@ body {
 
 .btn-save-assistant:hover,
 .btn-save-collection:hover,
-.btn-upload:hover {
+.btn-upload:hover,
+.btn-save-trait:hover,
+.btn-edit-collection:hover {
     background-color: #008100;
     color: #E5F5FF;
     border: 1px solid #008100

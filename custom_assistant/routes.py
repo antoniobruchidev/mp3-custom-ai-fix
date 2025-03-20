@@ -145,7 +145,7 @@ def playground():
 
 @app.post("/assistants/create")
 @login_required
-def create_assistant():
+def create_or_edit_assistant():
     """Method to create an assistant
 
     Returns:
@@ -156,7 +156,17 @@ def create_assistant():
     data = request.get_json()
     trait_limit = int(os.getenv("TRAIT_SLOTS", 20))
     assistant_limit = int(os.getenv("ASSISTANT_SLOTS", 5))
+    print(data)
     try:
+        if data['edit']:
+            assistant = db.session.get(Assistant, data['assistant_id'])
+            assistant.name = data['assistant_name']
+            assistant.prompt = data['base_prompt']
+            db.session.add(assistant)
+            db.session.commit()
+            db.session.close()
+            flash("Assistant modified successfully")
+            return {"status": 200}
         user = db.session.get(User, current_user.id)
         user_traits = db.session.query(CharacterTrait).filter(
             CharacterTrait.user_id==user.id
@@ -240,7 +250,7 @@ def create_assistant():
 
 @app.get("/collections")
 @login_required
-def collections():
+def get_collections():
     """Route to collections
 
     Returns:
@@ -259,10 +269,11 @@ def collections():
             sources = db.session.query(Source).filter(
                 Source.user_id==current_user.id
             ).all()
+            
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
-            return redirect('colections')
+            return redirect(url_for('get_collections'))
         collections_available = collections_limit - len(collections)
         sources_available = sources_limit - len(sources)
         return render_template(
@@ -535,33 +546,57 @@ def create_collection():
     Returns:
         dict: collection id
     """
-    collection_name=request.form.get("collection-name")
-    description=request.form.get("collection-description", None)
+    collection_name = request.form.get("collection-name")
+    collection_id = request.form.get("collection-id")
+    description = request.form.get("collection-description", None)
+    collection_limit = os.getenv("COLLECTION_SLOTS", 3)
+    print(collection_id, collection_name)
     if description is None or description == "":
         flash("error")
         return redirect(url_for("collections"))
     try:
         user_id = current_user.id
-        collection = Collection(
-            collection_name=request.form.get("collection-name"),
-            documents_description=request.form.get("collection-description"),
-            user_id=user_id
-        )
-        db.session.add(collection)
-        db.session.commit()
-        flash(f"Added collection {collection.id}")
-        db.session.close()
-        return redirect(url_for("collections"))
+        if collection_id != "":
+            collection = db.session.get(Collection, collection_id)
+            collection.collection_name = collection_name
+            collection.documents_description = description
+            db.session.add(collection)
+            db.session.commit()
+            flash(f"Collection {collection.collection_name} updated successfully")
+            db.session.close()
+            return redirect(url_for("get_collections"))
+        else:
+            collections = db.session.query(Collection).filter(
+                Collection.user_id==user_id
+            ).all()
+            names = [collection.collection_name for collection in collections]
+            if len(collections) == collection_limit:
+                flash("You already have reached the maximum collecections possibile. Delete one first.")
+                db.session.close()
+                return redirect(url_for("get_collections"))
+            if collection_name in names:
+                flash("You already have a collection with that name.")
+                return redirect(url_for("get_collections"))
+            collection = Collection(
+                collection_name=request.form.get("collection-name"),
+                documents_description=request.form.get("collection-description"),
+                user_id=user_id
+            )
+            db.session.add(collection)
+            db.session.commit()
+            flash(f"Added collection {collection.id}")
+            db.session.close()
+            return redirect(url_for("get_collections"))
     except OperationalError as e:
         db.session.rollback()
         db.session.close()
         flash(f"Operational error: {e} - Please retry...")
-        return redirect(url_for("collections"))
+        return redirect(url_for("get_collections"))
     except Exception as e:
         db.session.rollback()
         db.session.close()
         flash(f"Unknown error: {e} - Please retry...")
-        return redirect(url_for("collections"))
+        return redirect(url_for("get_collections"))
 
 
 @app.post("/sources/create")
@@ -586,10 +621,14 @@ def create_source():
     name = request.form.get("source-name", None)
     if saved:
         try:
+            source = db.session.query(Source).filter(
+                Source.filename==filename,
+                Source.user_id==user_id
+            ).first()
             aws_key = f"{user_id}/{filename}"
             keys = get_files()
             for key in keys:
-                if aws_key in key:
+                if aws_key in key and source is not None:
                     return {
                         "status": 400,
                         "error": "Source already present, please refresh the page."}
@@ -620,7 +659,40 @@ def create_source():
             return {"status": 500, "error": f"Unknown error: {e}"}
         return {"status": 200, "message": f"Added source: {source_id}"}
     else:
-        return {"status": 400, "error": "Error saving the file"}
+        return {"status": 400, "error": "Error saving the file"}@app.post("/add_source_to_collection")
+
+
+@app.post("/add_trait_to_assistant/<trait_id>/<assistant_id>")
+@login_required
+def add_trait_to_assistant(trait_id, assistant_id):
+    """Method to add a source to a collection
+
+    Returns:
+        dict: status and message/error
+    """
+    try:
+        assistant = db.session.get(Assistant, assistant_id)
+        trait = db.session.get(CharacterTrait, trait_id)
+        traits = [t.trait for t in assistant.traits]
+        if trait.trait == traits:
+            return {
+                "status": 400,
+                "error": "You already have a trait with that exact name."
+            }
+        else:
+            assistant.traits.append(trait)
+            db.session.add(assistant)
+            db.session.commit()
+            message = f"{trait.trait}: {trait.value} added to {assistant.name}"
+            db.session.close()
+            return {"status": 200, "message": message}
+    except OperationalError:
+        error = f"Operational error: {e} - Please retry"
+    except Exception as e:
+        error = f"Unknown error: {e} - Please retry"
+    return {"status": 500, "error": error}
+        
+            
 
 
 @app.post("/add_source_to_collection")
@@ -634,6 +706,19 @@ def add_source_to_collection():
     source_id = request.form.get("source-id")
     collection_id = request.form.get("collection-id")
     try:
+        collection = db.session.get(Collection, collection_id)
+        ids = [source.id for source in collection.sources]
+        tasks = db.session.query(BackgroundIngestionTask).filter(
+            BackgroundIngestionTask.collection_id==collection_id,
+            BackgroundIngestionTask.source_id==source_id,
+            BackgroundIngestionTask.ended==False
+        ).first()
+        if int(source_id) in ids:
+            db.session.close()
+            return {"stauts": 400, "error": "Source already in collection"}
+        if tasks is not None:
+            db.session.close()
+            return {"status": 400, "error": "Already planned the source ingestion in the collection, please wait an email will be sent to you when finished."}
         task = BackgroundIngestionTask(
             collection_id=collection_id,
             source_id=source_id,
@@ -694,3 +779,275 @@ def add_source_to_collection():
             "status": 200,
             "message": f"Task {task.id} will be tried again in 45 seconds. Job id: {result.id}"
         }
+
+
+@app.get("/assistants")
+@login_required
+def get_assistants():
+    """Route to assistants
+
+    Returns:
+        render_template: assistants
+    """
+    assistants_limit = os.getenv("ASSISTANT_SLOTS", 5)
+    traits_limit = os.getenv("TRAITS_SLOTS", 20)
+    
+    if current_user.is_authenticated:
+        try:
+            assistants = db.session.query(Assistant).filter(
+                Assistant.user_id==current_user.id
+            ).all()
+            c_traits = [assistant.traits for assistant in assistants]
+            assistants_with_traits = zip(assistants, c_traits)
+            print(c_traits)
+            traits = db.session.query(CharacterTrait).filter(
+                CharacterTrait.user_id==current_user.id
+            ).all()
+        except OperationalError as e:
+            db.session.rollback()
+            db.session.close()
+            return redirect(url_for('get_assistants'))
+        assistants_available = int(assistants_limit) - len(assistants)
+        traits_available = int(traits_limit) - len(traits)
+        return render_template(
+            "assistants.html",
+            assistants_limit=assistants_limit,
+            traits_limit=traits_limit,
+            assistants_with_traits=assistants_with_traits,
+            assistants_available=assistants_available,
+            traits_available=traits_available,
+            traits=traits      
+        )
+    else:
+        return redirect(url_for("login"))
+
+
+@app.post("/traits/create")
+@login_required
+def create_or_edit_trait():
+    """Route to create a source
+
+    Returns:
+        redirect: assistants page
+    """
+    trait_name = request.form.get("trait")
+    trait_value = request.form.get("value")
+    trait_reason_why = request.form.get("reason-why")
+    trait_id = request.form.get("trait-id", None)
+    try:
+        user_id = current_user.id
+        if trait_id is not None:
+            trait = db.session.get(CharacterTrait, trait_id)
+            if trait.user_id == user_id:
+                if int(trait_id) == trait.id and trait_name.lower() == trait.trait:
+                    trait.value=trait_value,
+                    trait.reason_why=trait_reason_why
+                    db.session.add(trait)
+                    db.session.commit()
+                    flash(f"Succesfully edit trait {trait_id}")
+                    db.session.close()
+                    return redirect(url_for("get_assistants"))
+            else:
+                flash("Permission denied for not owned trait")
+                return redirect(url_for("get_assistants"))
+
+        else:
+            trait = db.session.query(CharacterTrait).filter(
+                CharacterTrait.user_id==user_id,
+                CharacterTrait.trait==trait_name,
+                CharacterTrait.value==trait_value
+            ).first()
+            print(trait_name, trait.trait)
+            if trait is not None:
+                flash("You already have the same trait with the same value")
+                return redirect(url_for("get_assistants"))
+            new_trait = CharacterTrait(
+                trait=trait_name,
+                value=trait_value,
+                reason_why=trait_reason_why,
+                user_id=user_id
+            )
+            db.session.add(new_trait)
+            db.session.commit()
+            trait_id = new_trait.id
+            db.session.close()
+            flash(f"Added trait {trait_id}")
+            return redirect(url_for("get_assistants"))
+    except OperationalError as e:
+        flash(f"Operational error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+    except OperationalError as e:
+        flash(f"Pending rollback: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+
+
+@app.post("/traits/<trait_id>/delete")
+@login_required
+def delete_trait(trait_id):
+    try:
+        trait = db.session.get(CharacterTrait, trait_id)
+        db.session.delete(trait)
+        db.session.commit()
+        db.session.close()
+        flash("Trait deleted successfully")
+        return redirect(url_for('get_assistants'))
+    except OperationalError as e:
+        flash(f"Operational error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+    except Exception as e:
+        flash(f"Unknown error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+
+
+@app.post("/sources/<source_id>/delete")
+@login_required
+def delete_source(source_id):
+    try:
+        source = db.session.get(Source, source_id)
+        db.session.delete(source)
+        db.session.commit()
+        db.session.close()
+        flash("Source deleted successfully")
+        return redirect(url_for('get_assistants'))
+    except OperationalError as e:
+        flash(f"Operational error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+    except Exception as e:
+        flash(f"Unknown error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+
+
+@app.post("/collections/<collection_id>/delete")
+@login_required
+def delete_collection(collection_id):
+    try:
+        collection = db.session.get(Collection, collection_id)
+        db.session.delete(collection)
+        db.session.commit()
+        db.session.close()
+        flash("Collection deleted successfully")
+        return redirect(url_for('get_assistants'))
+    except OperationalError as e:
+        flash(f"Operational error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+    except Exception as e:
+        flash(f"Unknown error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+
+
+@app.post("/assistants/<assistant_id>/delete")
+@login_required
+def delete_assistant(assistant_id):
+    try:
+        assistant = db.session.get(Assistant, assistant_id)
+        db.session.delete(assistant)
+        db.session.commit()
+        db.session.close()
+        flash("Assistant deleted successfully")
+        return redirect(url_for('get_assistants'))
+    except OperationalError as e:
+        flash(f"Operational error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+    except Exception as e:
+        flash(f"Unknown error: {e} - Please retry...")
+        db.session.rollback()
+        db.session.close()
+        return redirect(url_for('get_assistants'))
+
+
+@app.get("/collections/<collection_id>")
+@login_required
+def get_collection(collection_id):
+    print(collection_id)
+    try:
+        collection = db.session.get(Collection, int(collection_id))
+        print(collection)
+        if collection:
+            if collection.user_id != current_user.id:
+                db.session.close()
+                return {
+                    "status": 403,
+                    "error": "Permission denied for not owned collection"
+                }
+            else:
+                collection_name = collection.collection_name
+                description = collection.documents_description
+                sources = []
+                for source in collection.sources:
+                    sources.append({
+                        "name": source.name,
+                        "description":source.description
+                    })
+                db.session.close()
+                return {
+                    "status": 200,
+                    "collection_name": collection_name,
+                    "description": description,
+                    "collection_id": collection_id,
+                    "sources": sources
+                    }
+        else:
+            return {"status": 404, "error": "No collection found"}
+    except OperationalError as e:
+        return {"status": 500, "error": f"Operational error: {e} - Please retry..."}
+    except Exception as e:
+        return {"status": 500, "error": f"Unknown error: {e} - Please retry..."}
+
+
+@app.get("/assistants/<assistant_id>")
+@login_required
+def get_assistant(assistant_id):
+    try:
+        assistant = db.session.get(Assistant, int(assistant_id))
+        print(assistant)
+        if assistant:
+            if assistant.user_id != current_user.id:
+                db.session.close()
+                return {
+                    "status": 403,
+                    "error": "Permission denied for not owned assistant"
+                }
+            else:
+                assistant_name = assistant.name
+                prompt = assistant.prompt
+                traits = []
+                for trait in assistant.traits:
+                    traits.append({
+                        "trait_id": trait.id,
+                        "trait_name": trait.trait,
+                        "trait_value": trait.value,
+                        "trait_reason_why": trait.reason_why
+                    })
+                db.session.close()
+                return {
+                    "status": 200,
+                    "assistant_id": assistant_id,
+                    "assistant_name": assistant_name,
+                    "prompt": prompt,
+                    "traits": traits
+                    }
+        else:
+            return {"status": 404, "error": "No collection found"}
+    except OperationalError as e:
+        return {"status": 500, "error": f"Operational error: {e} - Please retry..."}
+    except Exception as e:
+        return {"status": 500, "error": f"Unknown error: {e} - Please retry..."}
+            

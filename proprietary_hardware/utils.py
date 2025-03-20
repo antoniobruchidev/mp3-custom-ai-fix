@@ -7,8 +7,9 @@ from sentence_transformers import SentenceTransformer
 import torch
 import torch.multiprocessing as mp
 from werkzeug.utils import secure_filename
-from proprietary_hardware import ALLOWED_EXTENSIONS, UPLOAD_FOLDER, app, db
+from proprietary_hardware import ALLOWED_EXTENSIONS, UPLOAD_FOLDER, app, db, mail
 from proprietary_hardware.models import BackgroundIngestionTask, Collection, Source, User
+from flask_mail import Message
 
 
 def get_proprietary_hardware_status() -> bool:
@@ -123,6 +124,8 @@ def update_collection_and_task(collection_id, source_id, timestamp):
             collection.sources.append(source)
             db.session.add(collection)
             db.session.commit()
+            ended_ingestion_email(collection.user_id, collection.id, source.id)
+            db.session.close()
         except PendingRollbackError as e:
             db.session.rollback()
             try:
@@ -169,3 +172,46 @@ def update_collection_and_task(collection_id, source_id, timestamp):
                 db.session.close()
                 return False
         return True
+    
+
+def ended_ingestion_email(user_id, collection_id, source_id):
+    with app.app_context():
+        try:
+            user = db.session.get(User, user_id)
+            collection = db.session.get(Collection, collection_id)
+            source = db.session.get(Source, source_id)
+            msg = Message(
+                "The Custom Assistant - Background ingestion task ended",
+                sender=os.environ.get("MAIL_USERNAME"),
+                recipients=[user.email],
+            )
+            msg.body = (
+                f"Hello {user.email},\n\n"
+                f"Your document {source.filename} has been ingested in your collection {collection.collection_name}"
+                "Thanks."
+            )
+            mail.send(msg)
+            return hash
+        except OperationalError as e:
+            print(f"Operational error: {e} - Retrying")
+            try:
+                user = db.session.get(User, user_id)
+                collection = db.session.get(Collection, collection_id)
+                source = db.session.get(Source, source_id)
+                msg = Message(
+                    "The Custom Assistant - Background ingestion task ended",
+                    sender=os.environ.get("MAIL_USERNAME"),
+                    recipients=[user.email],
+                )
+                msg.body = (
+                    f"Hello {user.email},\n\n"
+                    f"Your document {source.filename} has been ingested in your collection {collection.collection_name}"
+                    "Thanks."
+                )
+                mail.send(msg)
+                return hash
+            except OperationalError:
+                db.session.close()
+        except Exception as e:
+            print("Unknown error: {e}")
+            db.session.close()

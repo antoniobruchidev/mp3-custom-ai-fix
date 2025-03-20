@@ -101,6 +101,7 @@ def ingest(collection_id, source_id, user_id):
             response = download_file(source.aws_key)
             print(f"{datetime.datetime.now().isoformat()} - response: {response}")
             filename = f"{LOCAL_PREFIX}/{collection.user_id}/{source.filename}"
+            file_name = source.filename
         except PendingRollbackError as e:
             db.session.rollback()
             print(f"{datetime.datetime.now().isoformat()} - Operational error: {e}")
