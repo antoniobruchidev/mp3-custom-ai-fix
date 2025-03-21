@@ -1,8 +1,9 @@
+import json
 import os
 from flask import request
 from celery.result import AsyncResult
 from sqlalchemy.exc import OperationalError, PendingRollbackError
-from proprietary_hardware.utils import get_proprietary_hardware_status
+from proprietary_hardware.utils import get_proprietary_hardware_status, history_chat
 from proprietary_hardware import app, db
 from proprietary_hardware.tasks import ingest_data, proprietary_celery, add
 from proprietary_hardware.models import (
@@ -150,6 +151,17 @@ def query():
         "message": answer,
         "error": error
         }
+
+
+@app.post("/chat_with_history")
+def chat_with_history():
+    if not request.is_json:
+        return {"status": 500, "error": "Bad request"}
+    chat_history = request.json.get("chat_history")
+    answer = history_chat(json.loads(chat_history))
+    return {
+        "status": 200,
+        "message": answer['answer'],
+        "prompt_tokens": answer['prompt_tokens'],
+        "comp_tokens": answer['comp_tokens']}
     
-    
-        

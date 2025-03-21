@@ -1,6 +1,8 @@
 from typing import List
 import os
 from langchain.embeddings.base import Embeddings
+from langchain_ollama import ChatOllama
+from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from sqlalchemy.exc import OperationalError, PendingRollbackError
 import requests
 from sentence_transformers import SentenceTransformer
@@ -10,6 +12,7 @@ from werkzeug.utils import secure_filename
 from proprietary_hardware import ALLOWED_EXTENSIONS, UPLOAD_FOLDER, app, db, mail
 from proprietary_hardware.models import BackgroundIngestionTask, Collection, Source, User
 from flask_mail import Message
+
 
 
 def get_proprietary_hardware_status() -> bool:
@@ -215,3 +218,27 @@ def ended_ingestion_email(user_id, collection_id, source_id):
         except Exception as e:
             print("Unknown error: {e}")
             db.session.close()
+
+def history_chat(chat_history):
+    llm = ChatOllama(
+        model=os.getenv("QWEN_MODEL"),
+        temperature=0.8,
+        disable_streaming=True
+    )
+    messages = []
+    for message in chat_history:
+        if message['role'] == "system":
+            messages.append(SystemMessage(content=message['content']))
+        elif message['role'] == "human":
+            messages.append(HumanMessage(content=message['content']))
+        else:
+            messages.append(AIMessage(content=message['content']))
+    
+    answer = llm.invoke(messages)
+    print(answer.response_metadata)
+    print(type(answer))
+    return {
+        "answer": answer.content,
+        "prompt_tokens": answer.usage_metadata['input_tokens'],
+        "comp_tokens": answer.usage_metadata['output_tokens']
+    }

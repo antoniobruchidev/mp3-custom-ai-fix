@@ -82,6 +82,21 @@ def bot_answer() -> dict:
         answer = chat(question=question, collection_id=collection_id)
         prompt_tokens = None
         comp_tokens = None
+    elif request.is_json:
+        chat_history = request.json.get("chat_history", None)
+        if chat_history is not None:
+            answer, prompt_tokens, comp_tokens = chat(chat_history=chat_history)
+            return {
+                "status": 200,
+                "answer": answer,
+                "prompt_tokens": prompt_tokens,
+                "comp_tokens": comp_tokens                
+            }
+        else:
+            return {
+                "status": 500,
+                "error": "Bad request"
+            }
     else:
         answer, prompt_tokens, comp_tokens = chat(
             prompt, message, traits
