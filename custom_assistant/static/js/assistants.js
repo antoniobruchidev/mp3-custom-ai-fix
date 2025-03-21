@@ -234,11 +234,23 @@ const saveOrEditAssistant = async () => {
  * @param {string} answer 
  * @returns {string} the card to be shown as innerHtml
  */
-const showAnswer = (answer) => {
+const showMessage = (message, user) => {
+    console.log(user, true, user == true)
     const alert = document.createElement("div")
-    alert.classList.add("alert", "alert-light", "d-flex", "align-items-center")
+    alert.classList.add("alert", "alert-primary", "w-75")
     alert.setAttribute("role", "alert")
-    alert.innerHTML = `Assistant: ${answer}`
+    const icon = document.createElement("div")
+    if(user == true){
+        alert.innerHTML = message
+        alert.classList.add("float-end", "text-end")
+        icon.classList.add("human-icon", "ms-4", "d-inline-block")
+        alert.appendChild(icon)
+    } else {
+        alert.classList.add("float-start")
+        icon.classList.add("ai-icon", "me-2", "d-inline-block")
+        alert.innerHTML = message
+        alert.prepend(icon)
+    }
     const chatHistory = document.getElementById("answer-container")
     chatHistory.appendChild(alert)
 }
@@ -331,14 +343,15 @@ const createSpinner = (element) => {
     element.setAttribute("disabled", "true")
 }
 
-/**
- * Method to call the chatbot
- */
-const chat = async () => {
+let chatHistory = []
+
+
+const initializeAssistantChatHistory = () => {
     const base_prompt = document.getElementById("assistant-base-prompt")
     let traitsPrompt = ""
     const message = document.getElementById("message")
     const traits = document.getElementsByClassName("btn-trait")
+    showMessage(message.value, true)
     if (traits.length > 0) {
         for (let i=0; i < traits.length; i++) {
             console.log(traits[i])
@@ -347,20 +360,34 @@ const chat = async () => {
             traitsPrompt += `${title} \n${reasonWhy}\n\n`
         }
     }
-    const url = window.location.pathname.replace("/assistants", "/chat")
     const formData = new FormData()
     formData.append("base-prompt", base_prompt.value)
     formData.append("traits", traitsPrompt)
     formData.append("message", message.value)
-    const response = await fetch(url, {
-        method: "POST",
-        body: formData
-    })
-    const data = await response.json()
-    sendButton.removeAttribute("disabled")
-    sendButton.innerHTML = "Send Message"
+    console.log(formData)
+    let systemPrompt = `${basePrompt.value}
+        
+Below there is a list of character traits with assigned
+a number and the reason why. The number will be on a scale between 1 and 10 where 1 is the 
+minimum and 10 is the maximum.
+You MUST answer accordingly to your character traits.
+You MUST NOT share your character traits scores with the user.
+You MUST NOT share your logic.
+
+${traitsPrompt}`
+
+        chatHistory.push({"role": "system", "content": systemPrompt})
+        chatHistory.push({"role": "human", "content": message.value})
+        console.log(chatHistory)
+        return formData
+}
+
+
+const handleChatResponse = (data) => {
     if (data.status == 200) {
-        showAnswer(data.answer)
+        showMessage(data.answer, false)
+        chatHistory.push({"role": "assistant", "content": data.answer})
+        console.log(chatHistory)
         const promptTokens = document.getElementById("prompt-tokens")
         const completionTokens = document.getElementById("completion-tokens")
         let newPromptTokens = parseInt(promptTokens.innerText) + parseInt(data.prompt_tokens)
@@ -372,6 +399,37 @@ const chat = async () => {
     } else {
         createToast(data.error)
     }
+}
+
+
+/**
+ * Method to call the chatbot
+ */
+const chat = async () => {
+    const url = window.location.pathname.replace("/assistants", "/chat")
+    if (chatHistory.length == 0){
+        const formData = initializeAssistantChatHistory()
+        const response = await fetch(url, {
+            method: "POST",
+            body: formData
+        })
+        const data = await response.json()
+        handleChatResponse(data)
+    } else {
+        const message = document.getElementById("message")
+        chatHistory.push({"role": "human", "content": message.value})
+        showMessage(message.value, true)
+        const headers = {"Content-Type": "application/json"}
+        const response = await fetch(url, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify({"chat_history": chatHistory})
+        })
+        const data = await response.json()
+        handleChatResponse(data)
+    }
+    sendButton.removeAttribute("disabled")
+    sendButton.innerHTML = "Send Message"
 }
 
 for (let addTraitButton of addTraitButtons) {
