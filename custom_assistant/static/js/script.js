@@ -47,37 +47,39 @@ let liveToasts = 0;
  * @param {string} message the message to display in the toast 
  */
 const createToast = (message) => {
-    liveToasts++
-    const t = document.createElement("div")
-    t.setAttribute("id", `live-toast-${liveToasts}`)
-    t.classList.add("toast")
-    t.setAttribute("role", "alert")
-    t.setAttribute("aria-live", "assertive")
-    t.setAttribute("aria-atomic", "true")
-    t.setAttribute("data-bs-animation", true)
-    t.setAttribute("data-bs-autohide", true)
-    t.setAttribute("data-bs-delay", 10000)
-    const tH = document.createElement("div")
-    tH.classList.add("toast-header")
-    const strong = document.createElement("strong")
-    strong.classList.add("me-auto")
-    strong.innerText = "The Custom Assistant"
-    const button = document.createElement("button")
-    button.classList.add("btn-close", "btn-close-white")
-    button.setAttribute("aria-label", "Close")
-    tH.appendChild(strong)
-    tH.appendChild(button)
-    t.appendChild(tH)
-    const tB = document.createElement("div")
-    tB.classList.add("toast-body")
-    tB.innerText = message
-    t.appendChild(tB)
-    const toastContainer = document.getElementById("toast-container")
-    toastContainer.appendChild(t)
-    showToast(t)
-    button.addEventListener("click", function() {
-       $(`#live-toast-${liveToasts}`).hide()
-    })
+    if (message != "do nothing"){
+        liveToasts++
+        const t = document.createElement("div")
+        t.setAttribute("id", `live-toast-${liveToasts}`)
+        t.classList.add("toast")
+        t.setAttribute("role", "alert")
+        t.setAttribute("aria-live", "assertive")
+        t.setAttribute("aria-atomic", "true")
+        t.setAttribute("data-bs-animation", true)
+        t.setAttribute("data-bs-autohide", true)
+        t.setAttribute("data-bs-delay", 10000)
+        const tH = document.createElement("div")
+        tH.classList.add("toast-header")
+        const strong = document.createElement("strong")
+        strong.classList.add("me-auto")
+        strong.innerText = "The Custom Assistant"
+        const button = document.createElement("button")
+        button.classList.add("btn-close", "btn-close-white")
+        button.setAttribute("aria-label", "Close")
+        tH.appendChild(strong)
+        tH.appendChild(button)
+        t.appendChild(tH)
+        const tB = document.createElement("div")
+        tB.classList.add("toast-body")
+        tB.innerText = message
+        t.appendChild(tB)
+        const toastContainer = document.getElementById("toast-container")
+        toastContainer.appendChild(t)
+        showToast(t)
+        button.addEventListener("click", function() {
+        $(`#live-toast-${liveToasts}`).hide()
+        })
+    }
 }
 
 /**
@@ -107,5 +109,16 @@ if (error != null) {
     createToast(error.innerText)
 }
 
+/**
+ * Method to update the tooltips
+ */
+const updateTooltips = () => {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    if (tooltipTriggerList != null){
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    }
+}
 
-
+updateTooltips()

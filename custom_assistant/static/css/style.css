@@ -111,7 +111,8 @@ body {
 .btn-save-trait,
 .btn-edit-collection,
 .btn-edit-assistant,
-.btn-profile {
+.btn-profile,
+.btn-manage {
     background-color: #0248B1;
     color: #E5F5FF;
 }

@@ -67,7 +67,17 @@ def bot_answer() -> dict:
     message= request.form.get("message", None)
     question = request.form.get("question", None)
     collection_id = request.form.get("collection-id", None)
-    print(question,collection_id)
+    user = None
+    daily_tokens_error = None
+    try:
+        if current_user.is_authenticated:
+            user = db.session.get(User, current_user.id)
+    except OperationalError as e:
+        db.session.close()
+        return {
+            "status": 500,
+            "error": f"Operational error: {e} Please retry..."
+        }
     if question is not None and collection_id is not None:
         answer = chat(question=question, collection_id=collection_id)
         prompt_tokens = None
@@ -76,18 +86,40 @@ def bot_answer() -> dict:
         answer, prompt_tokens, comp_tokens = chat(
             prompt, message, traits
         )
+        try:
+            daily_tokens = db.session.query(DailyTokens).filter(
+                DailyTokens.day==datetime.datetime.now().date().isoformat()
+            ).first()
+            if daily_tokens is not None:
+                daily_tokens.prompt_tokens += prompt_tokens
+                daily_tokens.completion_tokens += comp_tokens
+            else:
+                daily_tokens = DailyTokens(
+                    day=datetime.datetime.now().date().isoformat(),
+                    user_id=user.id,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=comp_tokens
+                )
+            db.session.add(daily_tokens)
+            db.session.commit()
+            db.session.close()
+        except Exception as e:
+            db.session.rollback()
+            db.session.close()
+            daily_tokens_error = f"Unknow error - free tokens"
     return {
         "status": 200,
         "answer": answer,
         "prompt_tokens": prompt_tokens,
-        "comp_tokens": comp_tokens
+        "comp_tokens": comp_tokens,
+        "daily_tokens_error": daily_tokens_error
         }
 
 
 @app.errorhandler(404)
 def page_not_found(e):
     return {
-        "page": "not found",
+        "error": "Page not found",
         "status": "404"
     }
 
@@ -928,22 +960,37 @@ def delete_trait(trait_id):
 @login_required
 def delete_source(source_id):
     try:
+        collections = db.session.query(Collection).filter(
+            Collection.user_id==current_user.id
+        ).all()
+        sources = db.session.query(Source).filter(
+            Source.user_id==current_user.id
+        ).all()
+        not_deletable_sources = []
+        for collection in collections:
+            for source in sources:
+                if source in collection.sources:
+                    not_deletable_sources.append(source)
         source = db.session.get(Source, source_id)
-        db.session.delete(source)
-        db.session.commit()
-        db.session.close()
-        flash("Source deleted successfully")
-        return redirect(url_for('get_assistants'))
+        if source not in not_deletable_sources:
+            db.session.delete(source)
+            db.session.commit()
+            db.session.close()
+            flash("Source deleted successfully")
+            return redirect(url_for('get_collections'))
+        else:
+            flash("Source ingested in one or more collections, delete the collecion/s first")
+            return redirect(url_for("get_collections"))
     except OperationalError as e:
         flash(f"Operational error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for('get_collections'))
     except Exception as e:
         flash(f"Unknown error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for('get_collections'))
 
 
 @app.post("/collections/<collection_id>/delete")
@@ -955,17 +1002,17 @@ def delete_collection(collection_id):
         db.session.commit()
         db.session.close()
         flash("Collection deleted successfully")
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for('get_collections'))
     except OperationalError as e:
         flash(f"Operational error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for('get_collections'))
     except Exception as e:
         flash(f"Unknown error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for('get_collections'))
 
 
 @app.post("/assistants/<assistant_id>/delete")
@@ -1084,12 +1131,14 @@ def profile():
         ).all()
         assistants_available = int(assistants_limit) - len(assistants)
         traits = db.session.query(CharacterTrait).filter(
-            Assistant.user_id==user_id
+            CharacterTrait.user_id==user_id
         ).all()
         traits_available = int(traits_limit) - len(traits)
         collections = db.session.query(Collection).filter(
-            Assistant.user_id==user_id
+            Collection.user_id==user_id
         ).all()
+        c_sources = [collection.sources for collection in collections]
+        collections_with_sources = zip(collections, c_sources)    
         collections_available = int(collections_limit) - len(collections)
         sources = db.session.query(Source).filter(
             Source.user_id==user_id
@@ -1106,6 +1155,15 @@ def profile():
         if tokens is not None:
             total_tokens_used = tokens.prompt_tokens + tokens.completion_tokens
         available_tokens = daily_tokens_limit - total_tokens_used
+        tokens = db.session.query(DailyTokens).filter(
+            DailyTokens.user_id==user_id
+        ).order_by(DailyTokens.day).all()
+        not_deletable_sources = []
+        for collection in collections:
+            for source in sources:
+                if source in collection.sources:
+                    not_deletable_sources.append(source)
+        deletable_sources = list(set(sources) - set(not_deletable_sources))
     except OperationalError:
         return redirect(url_for("profile"))
     return render_template(
@@ -1116,7 +1174,7 @@ def profile():
         traits=traits,
         traits_available=traits_available,
         traits_limit=traits_limit,
-        collections=collections,
+        collections=collections_with_sources,
         collections_available=collections_available,
         collections_limit=collections_limit,
         sources=sources,
@@ -1125,6 +1183,10 @@ def profile():
         chat_histories=chat_histories,
         available_tokens=available_tokens,
         daily_tokens_limit=daily_tokens_limit,
+        tokens=tokens,
+        deletable_sources=deletable_sources,
+        not_deletable_sources=not_deletable_sources,
+        user_id=user_id
     )
 
 
@@ -1158,4 +1220,44 @@ def password_change():
             return redirect(url_for("password_change"))
     else:
         return render_template("forgot_password.html", old_password_check=True)
-    
+
+
+@app.get("/daily_tokens/<daily_tokens_id>")
+@login_required
+def get_tokens(daily_tokens_id):
+    if daily_tokens_id == "0":
+        return {"status": 200, "message": "do nothing"}
+    try:
+        daily_token_usage = db.session.get(DailyTokens, daily_tokens_id)
+        if daily_token_usage is not None:
+            comp_tokens = daily_token_usage.completion_tokens
+            prompt_tokens = daily_token_usage.prompt_tokens
+            db.session.close()
+            return {
+                "status":200,
+                "message": {
+                    "prompt_tokens": prompt_tokens,
+                    "comp_tokens": comp_tokens
+                    }
+            }
+        return {"status": 404, "error": "Record not found"}
+    except OperationalError as e:
+        db.session.close()
+        return {f"Operational error: {e} - Please retry..."}
+    except Exception as e:
+        db.session.close()
+        return {f"Operational error: {e} - Please retry..."}
+
+
+@app.get("/delete_account/<user_id>")
+@login_required
+def delete_account(user_id):
+    try:
+        if user_id == current_user.id:
+            pass
+        else:
+            flash("Permission denied")
+            return redirect(url_for("home"))
+    except OperationalError:
+        flash("Unknown error - Please retry...")
+        return redirect(url_for("profile"))

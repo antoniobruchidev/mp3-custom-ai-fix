@@ -213,16 +213,6 @@ const createButtonWithPopover = (trait, value, reasonWhy, id) => {
 }
 
 /**
- * Method to update the tooltips
- */
-const updateTooltips = () => {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
-}
-
-/**
  * Method to make a trait active in the playground and close the traits modal
  * @param {element} trait  the element representing the trait to be added
  */
