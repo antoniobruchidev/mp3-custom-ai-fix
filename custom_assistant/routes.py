@@ -1,3 +1,4 @@
+import datetime
 import os
 from flask import flash, redirect, render_template, request, url_for
 from celery.result import AsyncResult
@@ -258,7 +259,16 @@ def get_collections():
     """
     collections_limit = os.getenv("COLLECTION_SLOTS", 3)
     sources_limit = os.getenv("SOURCES_SLOTS", 10)
-    
+    timestamp = app.config["PROPRIETARY_HARDWARE_DOWN"]
+    chat_server, embedding_server = get_proprietary_hardware_status()
+    if not embedding_server:
+        if timestamp == 0:
+            app.config["PROPRIETARY_HARDWARE_DOWN"] = datetime.datetime.now().timestamp()
+        timestamp = datetime.datetime.fromtimestamp(
+            app.config["PROPRIETARY_HARDWARE_DOWN"]
+            ).isoformat()
+    else:
+        app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
     if current_user.is_authenticated:
         try:
             collections = db.session.query(Collection).filter(
@@ -283,7 +293,8 @@ def get_collections():
             collections_with_sources=collections_with_sources,
             collections_available=collections_available,
             sources_available=sources_available,
-            sources=sources      
+            sources=sources,
+            timestamp=timestamp
         )
     else:
         return redirect(url_for("login"))
@@ -531,6 +542,11 @@ def get_status():
     """Method to get the proprietary hardware status - Test route
     """
     chat_server, embedding_server = get_proprietary_hardware_status()
+    if not embedding_server:
+        if app.config["PROPRIETARY_HARDWARE_DOWN"] == 0:
+            app.config["PROPRIETARY_HARDWARE_DOWN"] = datetime.datetime.now().timestamp()
+    else:
+        app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
     return {
         "status": 200,
         "chat_server": chat_server,
@@ -659,13 +675,13 @@ def create_source():
             return {"status": 500, "error": f"Unknown error: {e}"}
         return {"status": 200, "message": f"Added source: {source_id}"}
     else:
-        return {"status": 400, "error": "Error saving the file"}@app.post("/add_source_to_collection")
+        return {"status": 400, "error": "Error saving the file"}
 
 
 @app.post("/add_trait_to_assistant/<trait_id>/<assistant_id>")
 @login_required
 def add_trait_to_assistant(trait_id, assistant_id):
-    """Method to add a source to a collection
+    """Method to add a trait to an assistant
 
     Returns:
         dict: status and message/error
@@ -693,8 +709,6 @@ def add_trait_to_assistant(trait_id, assistant_id):
     return {"status": 500, "error": error}
         
             
-
-
 @app.post("/add_source_to_collection")
 @login_required
 def add_source_to_collection():
@@ -747,6 +761,7 @@ def add_source_to_collection():
             return {"status": 500, "error": e}
     chat_server, embedding_server = get_proprietary_hardware_status()
     if embedding_server:
+        app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
         url = f"{os.getenv('PROPRIETARY_HARDWARE_URL')}/ingest_data"
         payload = {
             "task_id": task_id,
@@ -760,6 +775,8 @@ def add_source_to_collection():
                 "status": 200
             }
     else:
+        if app.config["PROPRIETARY_HARDWARE_DOWN"] == 0:
+            app.config["PROPRIETARY_HARDWARE_DOWN"] = datetime.datetime.now().timestamp()
         result = retry.delay(task.id)
         try:
             task = db.session.get(BackgroundIngestionTask, task_id)

@@ -34,6 +34,7 @@ app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
 app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USE_SSL"] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
 mail = Mail(app)
 
 #setting OAUTHLIB insecure transport to 1

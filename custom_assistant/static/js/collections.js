@@ -133,6 +133,8 @@ const chat = async () => {
     })
     const data = await response.json()
     if (data.status == 200) {
+        sendButton.removeAttribute("disabled")
+        sendButton.innerHTML = "Send message"
         showAnswer(data.answer.message)
     } else {
         createToast(data.answer.error)
@@ -204,7 +206,23 @@ collectionSelector.addEventListener("change", function(e) {
     getCollection(url)
 })
 
-sendButton.addEventListener("click", chat)
+const createSpinner = (element) => {
+    const spinnerSpan = document.createElement("span")
+    const spinnerRole = document.createElement("span")
+    spinnerSpan.classList.add("spinner-border", "spinner-border-sm")
+    spinnerSpan.setAttribute("aria-hidden", "true")
+    spinnerRole.setAttribute("role", "status")
+    spinnerRole.innerText = "Loading..."
+    element.innerHTML = ""
+    element.appendChild(spinnerSpan)
+    element.appendChild(spinnerRole)
+    element.setAttribute("disabled", "true")
+}
+
+sendButton.addEventListener("click", event => {
+    createSpinner(event.target)
+    chat()
+})
 
 addNewSourceButton.addEventListener("click", addNewSource)
 

@@ -317,6 +317,20 @@ const addTraitToAssistant = async (element) => {
 
 }
 
+
+const createSpinner = (element) => {
+    const spinnerSpan = document.createElement("span")
+    const spinnerRole = document.createElement("span")
+    spinnerSpan.classList.add("spinner-border", "spinner-border-sm")
+    spinnerSpan.setAttribute("aria-hidden", "true")
+    spinnerRole.setAttribute("role", "status")
+    spinnerRole.innerText = "Loading..."
+    element.innerHTML = ""
+    element.appendChild(spinnerSpan)
+    element.appendChild(spinnerRole)
+    element.setAttribute("disabled", "true")
+}
+
 /**
  * Method to call the chatbot
  */
@@ -343,7 +357,8 @@ const chat = async () => {
         body: formData
     })
     const data = await response.json()
-    console.log(data)
+    sendButton.removeAttribute("disabled")
+    sendButton.innerHTML = "Send Message"
     if (data.status == 200) {
         showAnswer(data.answer)
         const promptTokens = document.getElementById("prompt-tokens")
@@ -353,6 +368,7 @@ const chat = async () => {
         promptTokens.innerText = newPromptTokens
         completionTokens.innerText = newCompletionTokens
         createToast(`PROMPT TOKENS: ${data.prompt_tokens} - COMPLETION TOKENS: ${data.comp_tokens}`)
+
     } else {
         createToast(data.error)
     }
@@ -365,6 +381,9 @@ for (let addTraitButton of addTraitButtons) {
 }
 
 // add event listener to invoke the chatbot with the active settings
-sendButton.addEventListener("click", chat)
+sendButton.addEventListener("click", event => {
+    createSpinner(event.target)
+    chat()
+})
 
 
