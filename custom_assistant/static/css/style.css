@@ -111,9 +111,13 @@ body {
 .btn-save-trait,
 .btn-edit-collection,
 .btn-edit-assistant,
-.btn-manage {
+.btn-profile {
     background-color: #0248B1;
     color: #E5F5FF;
+}
+
+.btn-profile {
+    border: 1px solid #0248B1;
 }
 
 .btn-add-trait:hover,
@@ -123,7 +127,8 @@ body {
 .btn-edit-trait:hover,
 .btn-edit-assistant:hover,
 .btn-manage:hover,
-.btn-send-message:hover {
+.btn-send-message:hover,
+.btn-profile:hover  {
     background-color: #E5F5FF;
     color: #0248B1;
     border: 1px solid #0248B1;
@@ -139,12 +144,18 @@ body {
     border: 1px solid #008100
 }
 
-.btn-discard {
+.btn-discard,
+.btn-profile-discard {
     background-color: red;
     color: #E5F5FF;
 }
 
-.btn-discard:hover {
+.btn-profile-discard {
+    border: 1px solid red;
+}
+
+.btn-discard:hover,
+.btn-profile-discard:hover {
     background-color: #ffd7d7;
     color: red;
     border: 1px solid red;

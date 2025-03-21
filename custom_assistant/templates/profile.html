@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h1 class="text-center mt-5">
+    Profile Page
+</h1>
+
+<div class="row row-cols-1 row-cols-md-3 g-4 mt-5">
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-header">
+                My account:
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Actions available</h5>
+                <div class="list-group">
+                    <a href="{{ url_for('password_change') }}" class="list-group-item list-group-item-action btn-profile">
+                      Change Password
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action btn-profile-discard">Delete Account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-header">
+                My daily tokens usage - available {{ available_tokens }} of {{ daily_tokens_limit }}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Card title</h5>
+                <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-header">
+                My vectorstore - Collections available {{ collections_available }} of {{ collections_limit }}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Card title</h5>
+                <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-header">
+                My sources - available {{ sources_available }} of {{ sources_limit }}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Card title</h5>
+                <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+            </div>
+        </div>
+    </div>
+{{ assistants }} {{ assistants_available}}
+{{ traits }} {{ traits_available}}
+{{ collections }} {{ collections_available}}
+{{ sources }} {{ sources_available}}
+{% endblock %}

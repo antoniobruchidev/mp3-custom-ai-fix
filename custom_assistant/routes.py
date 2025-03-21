@@ -6,7 +6,7 @@ import requests
 from custom_assistant import app, db, argon2
 from custom_assistant.inference import chat
 from custom_assistant.mail import forgot_password_email, send_activation_email
-from custom_assistant.models import Assistant, CharacterTrait, Collection, User, BackgroundIngestionTask
+from custom_assistant.models import Assistant, CharacterTrait, ChatHistory, Collection, DailyTokens, User, BackgroundIngestionTask
 from flask_login import AnonymousUserMixin, LoginManager, current_user, login_required, login_user, logout_user
 from sqlalchemy.exc import OperationalError
 from psycopg2.errors import NotNullViolation
@@ -1067,4 +1067,95 @@ def get_assistant(assistant_id):
         return {"status": 500, "error": f"Operational error: {e} - Please retry..."}
     except Exception as e:
         return {"status": 500, "error": f"Unknown error: {e} - Please retry..."}
-            
+
+
+@app.get("/profile")
+@login_required
+def profile():
+    assistants_limit = os.getenv("ASSISTANT_SLOTS", 5)
+    traits_limit = os.getenv("TRAIT_SLOTS", 20)
+    collections_limit = os.getenv("COLLECTION_SLOTS", 3)
+    sources_limit = os.getenv("SOURCES_SLOTS", 10)
+    daily_tokens_limit = os.getenv("TOKENS_LIMIT", 2000)
+    try:
+        user_id = current_user.id
+        assistants = db.session.query(Assistant).filter(
+            Assistant.user_id==user_id
+        ).all()
+        assistants_available = int(assistants_limit) - len(assistants)
+        traits = db.session.query(CharacterTrait).filter(
+            Assistant.user_id==user_id
+        ).all()
+        traits_available = int(traits_limit) - len(traits)
+        collections = db.session.query(Collection).filter(
+            Assistant.user_id==user_id
+        ).all()
+        collections_available = int(collections_limit) - len(collections)
+        sources = db.session.query(Source).filter(
+            Source.user_id==user_id
+        ).all()
+        sources_available = int(sources_limit) - len(sources)
+        chat_histories = db.session.query(ChatHistory).filter(
+            ChatHistory.user_id==user_id
+        ).all()
+        tokens = db.session.query(DailyTokens).filter(
+            DailyTokens.user_id==user_id,
+            DailyTokens.day==datetime.datetime.now().date().isoformat()
+        ).first()
+        total_tokens_used = 0
+        if tokens is not None:
+            total_tokens_used = tokens.prompt_tokens + tokens.completion_tokens
+        available_tokens = daily_tokens_limit - total_tokens_used
+    except OperationalError:
+        return redirect(url_for("profile"))
+    return render_template(
+        "profile.html",
+        assistants=assistants,
+        assistants_available=assistants_available,
+        assistants_limit=assistants_limit,
+        traits=traits,
+        traits_available=traits_available,
+        traits_limit=traits_limit,
+        collections=collections,
+        collections_available=collections_available,
+        collections_limit=collections_limit,
+        sources=sources,
+        sources_available=sources_available,
+        sources_limit=sources_limit,
+        chat_histories=chat_histories,
+        available_tokens=available_tokens,
+        daily_tokens_limit=daily_tokens_limit,
+    )
+
+
+@app.route("/users/change_password", methods=["GET", "POST"])
+@login_required
+def password_change():
+    if request.method == "POST":
+        try:
+            user = db.session.get(User, current_user.id)
+            if request.form.get("password") == request.form.get("confirm-password"):
+                changed = user.change_password(
+                    request.form.get("old-password"),
+                    request.form.get("password")
+                )
+                if changed:
+                    db.session.add(user)
+                    db.session.commit()
+                    db.session.close()
+                    flash("Password updated succesfully")
+                    return redirect(url_for("profile"))
+                else:
+                    flash("Old password doesn't match.")
+                    return redirect(url_for("profile"))
+            else:
+                flash("password don't match")
+                return redirect(url_for("profile"))
+        except OperationalError:
+            db.session.rollback()
+            db.session.close()
+            flash("Database connection lost, please retry")
+            return redirect(url_for("password_change"))
+    else:
+        return render_template("forgot_password.html", old_password_check=True)
+    

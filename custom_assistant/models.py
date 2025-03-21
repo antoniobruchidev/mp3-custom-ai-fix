@@ -251,4 +251,17 @@ class BackgroundIngestionTask(db.Model):
     proprietary_task_id = db.Column(db.String, nullable=True)
     result = db.Column(db.Boolean, nullable=True)
     ended = db.Column(db.Boolean, default=False)
-    
+
+
+class DailyTokens(db.Model):
+    # schema for the user daily token usage
+    __tablename__ = "daily_tokens"
+    id = db.Column(db.Integer, primary_key=True)
+    day = db.Column(db.String(10), nullable=False)
+    prompt_tokens = db.Column(db.Integer, nullable=False)
+    completion_tokens = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
+    )
