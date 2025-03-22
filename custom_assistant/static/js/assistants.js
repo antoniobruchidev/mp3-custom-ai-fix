@@ -318,6 +318,11 @@ if (deleteModal) {
 
 const addTraitButtons = document.getElementsByClassName("btn-add-trait")
 
+
+/**
+ * Method to connect a trait to an assistant
+ * @param {html element} element 
+ */
 const addTraitToAssistant = async (element) => {
     if (activeAssistant.id == null) {
         createToast("Select an assistant first")
@@ -336,7 +341,10 @@ const addTraitToAssistant = async (element) => {
 
 }
 
-
+/**
+ * Method to create a spinner to notify the user
+ * @param {html element} element 
+ */
 const createSpinner = (element) => {
     const spinnerSpan = document.createElement("span")
     const spinnerRole = document.createElement("span")
@@ -350,7 +358,10 @@ const createSpinner = (element) => {
     element.setAttribute("disabled", "true")
 }
 
-
+/**
+ * Method that initialize the chat history at the frontend
+ * @returns FormData element
+ */
 const initializeAssistantChatHistory = () => {
     const base_prompt = document.getElementById("assistant-base-prompt")
     let traitsPrompt = ""
@@ -384,7 +395,10 @@ ${traitsPrompt}`
         return formData
 }
 
-
+/**
+ * Method to handle the chat response
+ * @param {dict} data 
+ */
 const handleChatResponse = (data) => {
     if (data.status == 200) {
         showMessage(data.answer, false)
@@ -457,6 +471,11 @@ sendButton.addEventListener("click", event => {
 
 const saveHistoryButton = document.getElementById("save-history")
 
+
+/**
+ * Method to save the chat history
+ * @param {string} url 
+ */
 const saveHistory = async (url) => {
     const name = document.getElementById("chat-history-name")
     const payload = {"chat_history": chatHistory, "chat_history_name": name.value}

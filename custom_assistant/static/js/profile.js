@@ -33,7 +33,10 @@ tokensUsageSelector.addEventListener("change", event => {
     getTokens(url)
 })
 
-
+/**
+ * Method to delete an account
+ * @param {html element} element 
+ */
 const deleteAccount = async (element) => {
     const url = element.getAttribute("data-delete-url")
     const deleteAccountUrl = window.location.pathname.replace("/profile", url)

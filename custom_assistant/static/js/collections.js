@@ -66,7 +66,9 @@ const showIngestedSources = (sources) => {
 
 }
 
-
+/**
+ * Method to upload a new document
+ */
 const addNewSource = () => {
     const form = document.getElementById("source-form")
     const formData = new FormData(form)
@@ -89,6 +91,10 @@ const addNewSource = () => {
     }
 }
 
+/**
+ * Method to add a source to a collection
+ * @param {html element} element 
+ */
 const addToCollection = (element) => {
     const collection = document.getElementById("collection-select")
     if (collection.value == "Select you collection") {
@@ -140,7 +146,9 @@ const chat = async () => {
     }
 }
 
-
+/**
+ * Method to reset the collection fields
+ */
 const resetCollectionFields = () => {
     if (activeCollection.id != null){
         collectionName.value = activeCollection.collectionName
@@ -155,6 +163,10 @@ const resetCollectionFields = () => {
     }
 }
 
+/**
+ * Method to set a collection as active
+ * @param {dict} data 
+ */
 const setActiveCollection = (data) => {
     activeCollection.id = data.collection_id
     activeCollection.collectionName = data.collection_name
@@ -164,6 +176,10 @@ const setActiveCollection = (data) => {
     updatePopovers()
 }
 
+/**
+ * Method to get a given collection info
+ * @param {string} url 
+ */
 const getCollection = async (url) => {
     const response = await fetch(url)
     const data = await response.json()
@@ -203,6 +219,10 @@ collectionSelector.addEventListener("change", function(e) {
     getCollection(url)
 })
 
+/**
+ * Method to create a spinner and notify the user
+ * @param {html element} element 
+ */
 const createSpinner = (element) => {
     const spinnerSpan = document.createElement("span")
     const spinnerRole = document.createElement("span")
