@@ -221,7 +221,7 @@ const createSpinner = (element) => {
 
 sendButton.addEventListener("click", event => {
     const question = document.getElementById("question")
-    if (collectionSelector.value == "Select your collection" || question.value == ""){
+    if (collectionSelector.value != "Select your collection" || question.value != ""){
         createSpinner(event.target)
         chat()
     } else {

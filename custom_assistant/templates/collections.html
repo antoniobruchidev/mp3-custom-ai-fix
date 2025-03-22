@@ -24,7 +24,7 @@
         </div>
         <div class="card-body">
             <select id="collection-select" class="form-select" aria-label="Select you collection" data-url="{{ url_for('get_collection', collection_id='')}}">
-                <option selected>Select you collection</option>
+                <option selected>Select your collection</option>
                 {% for collection, sources in collections_with_sources %}
                     <option value="{{ collection.id }}">{{ collection.collection_name }}
                         {% for source in sources %}
