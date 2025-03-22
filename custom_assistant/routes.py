@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 from flask import flash, redirect, render_template, request, url_for
 from celery.result import AsyncResult
@@ -921,7 +922,6 @@ def create_or_edit_trait():
                 CharacterTrait.trait==trait_name,
                 CharacterTrait.value==trait_value
             ).first()
-            print(trait_name, trait.trait)
             if trait is not None:
                 flash("You already have the same trait with the same value")
                 return redirect(url_for("get_assistants"))
@@ -1276,3 +1276,112 @@ def delete_account(user_id):
     except OperationalError:
         flash("Unknown error - Please retry...")
         return redirect(url_for("profile"))
+
+
+@app.post("/chat_histories/save")
+@login_required
+def save_chat_history():
+    if not request.is_json:
+        return {"status": 500, "error": "Bad request"}
+    try:
+        user_id = current_user.id
+        json_chat_history = request.json.get("chat_history")
+        chat_history_id = request.json.get("chat_history_id", None)
+        chat_history_name = request.json.get("chat_history_name", None)
+        if chat_history_id is None:
+            if chat_history_name is None:
+                chat_history_name = "Saved chat"
+            chat_history = ChatHistory(
+                user_id=user_id,
+                name=chat_history_name,
+                messages=json_chat_history
+            )
+            db.session.add(chat_history)
+            db.session.commit()
+            db.session.close()
+            return {"status": 200, "message": "Chat history saved successfully"}
+        else:
+            chat_history = db.session.get(ChatHistory, chat_history_id)
+            if chat_history is None:
+                return {"status": 404, "error": "Chat history not found"}
+            else:
+                chat_history.name = chat_history_name
+                chat_history.messages = json_chat_history
+                db.session.add(chat_history)
+                db.session.commit()
+                db.session.close()
+                return {"status": 200, "message": "Chat history saved successfully"}
+    except OperationalError:
+        return {"status": 500, "error": "Operational error - please retry.."}
+    except Exception as e:
+        return {"status": 500, "error": f"Unknown error - {e} - please retry.."}
+
+
+@app.get("/chat_histories")
+@login_required
+def get_chat_histories():
+    try:
+        user_chat_histories = db.session.query(ChatHistory).filter(
+            ChatHistory.user_id==current_user.id
+        ).all()
+        json_chat_histories = [
+            chat_history.messages for chat_history in user_chat_histories
+        ]
+        trimmed_histories = []
+        for chat_history in json_chat_histories:
+            to_trim = len(chat_history) - 2
+            trimmed_histories.append(chat_history[to_trim:])
+        db.session.close()
+        histories_trimmed_info = zip(user_chat_histories, trimmed_histories)
+        return render_template(
+            "chat_histories.html",
+            chat_histories=histories_trimmed_info
+        )
+    except OperationalError:
+        flash("Operational error: Please retry")
+        return redirect(url_for("profile"))
+    except Exception as e:
+        flash(f"Unknown error: -{e} Please retry")
+        return redirect(url_for("profile"))
+
+
+@app.get("/chat_histories/<chat_history_id>")
+@login_required
+def get_chat_history(chat_history_id):
+    try:
+        chat_history = db.session.get(ChatHistory, chat_history_id)
+        messages = chat_history.messages
+        return render_template(
+            "chat_history.html",
+            chat_history=chat_history,
+            messages=messages
+        )
+    except OperationalError:
+        flash("Operational error: Please retry")
+        return redirect(url_for("profile"))
+    except Exception as e:
+        flash(f"Unknown error: {e} Please retry")
+        return redirect(url_for("profile"))
+
+
+@app.post("/chat_histories/<chat_history_id>/delete")
+@login_required
+def delete_chat_history(chat_history_id):
+    try:
+        chat_history = db.session.get(ChatHistory, chat_history_id)
+        if chat_history is None:
+            flash("Chat history not found")
+            return redirect(url_for("get_chat_histories"))
+        if current_user.id == chat_history.user_id:
+            db.session.delete(chat_history)
+            db.session.commit()
+            db.session.close()
+            flash("Chat history deleted succesfully")
+            return redirect(url_for("get_chat_histories"))
+        else:
+            flash("Operation not permitted")
+            return redirect(url_for("get_chat_histories"))
+    except OperationalError:
+        flash("Operational error: Please retry...")
+    except Exception:
+        flash("Unknown error: Please retry...")
