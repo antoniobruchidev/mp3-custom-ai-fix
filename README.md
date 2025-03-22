@@ -127,5 +127,11 @@ It will tell the heroku platform which python version to use.
 
 Deployment process is now pretty straightforward. Login on Heroku, go to the application deploy tab, follow the cli instructions or connect the app to the github repo. Click deploy branch.
 
+## [TESTING](TESTING.md)
+
+## [DATABASE](DATABASE.md)
+
+## [BUGS](BUGS.md)
+
 
 
