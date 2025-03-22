@@ -222,10 +222,10 @@ const createSpinner = (element) => {
 sendButton.addEventListener("click", event => {
     const question = document.getElementById("question")
     if (collectionSelector.value == "Select your collection" || question.value == ""){
+        createToast("A collection needs to be selected and a question made")
+    } else {
         createSpinner(event.target)
         chat()
-    } else {
-        createToast("A collection needs to be selected and a question made")
     }
 })
 
