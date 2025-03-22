@@ -202,31 +202,35 @@ const saveOrEditAssistant = async () => {
     const url = form.getAttribute("action")
     var name = document.getElementById("assistant-name")
     var prompt = document.getElementById("assistant-base-prompt")
-    if (activeAssistant.id != null){
-        payload = {
-            "edit": edit,
-            "assistant_id": activeAssistant.id,
-            "assistant_name": name.value,
-            "base_prompt": prompt.value,
+    if (name.value != null || prompt.value != null){
+        if (activeAssistant.id != null){
+            payload = {
+                "edit": edit,
+                "assistant_id": activeAssistant.id,
+                "assistant_name": name.value,
+                "base_prompt": prompt.value,
+            }
+        } else {
+            payload = {
+                "assistant_name": name.value,
+                "base_prompt": prompt.value,
+                "edit": false,
+                "traits": []
+            }
+        }
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        const data = await response.json()
+        if (data.status == 200) {
+            window.location.href = window.location.pathname
+        } else {
+            createToast(data.error)
         }
     } else {
-        payload = {
-            "assistant_name": name.value,
-            "base_prompt": prompt.value,
-            "edit": false,
-            "traits": []
-        }
-    }
-    const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    })
-    const data = await response.json()
-    if (data.status == 200) {
-        window.location.href = window.location.pathname
-    } else {
-        createToast(data.error)
+        createToast("Name and base prompt cannot be blank")
     }
 }
 
@@ -415,6 +419,8 @@ const chat = async () => {
     const basePrompt = document.getElementById("assistant-base-prompt")
     if (message.value == "" || basePrompt.value == ""){
         createToast("Assistant base prompt and user message cannot be blank")
+        sendButton.removeAttribute("disabled")
+        sendButton.innerHTML = "Send Message"
     } else {
         const url = window.location.pathname.replace("/assistants", "/chat")
         if (chatHistory.length == 0){
