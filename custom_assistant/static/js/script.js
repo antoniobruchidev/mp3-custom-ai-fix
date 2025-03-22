@@ -121,4 +121,5 @@ const updateTooltips = () => {
     }
 }
 
+const chatHistory = []
 updateTooltips()

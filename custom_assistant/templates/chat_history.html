@@ -39,7 +39,7 @@
                 <button id="send-message" class="btn btn-send-message" type="button">
                     Send message
                 </button>
-                <button id="save-history" class="btn btn-save-history rounded-end" type="button" data-url="{{ url_for('save_chat_history')}}">
+                <button id="save-history" class="btn btn-save-history rounded-end" type="button" data-id="{{ chat_history.id }}" data-url="{{ url_for('save_chat_history')}}">
                     Save History
                 </button>
                 <input id="chat-history-name" class="form-control ms-4 w-50" type="text" placeholder="Give your chat history a name" aria-label="Chat history name">
@@ -51,5 +51,125 @@
 {% endblock %}
 
 {% block postloadjs %}
-<script src="{{ url_for('static', filename="js/assistants.js")}}"></script>
+<script type="module">
+{% for message in chat_history.messages %}
+    {% if message["role"] == "human" %}
+        chatHistory.push({"role": "human", "content": `{{ message['content'] }}`})
+    {% elif message["role"] == "assistant" %}
+        chatHistory.push({"role": "assistant", "content": `{{ message['content'] }}`})
+        console.log(chatHistory)
+    {% endif %}
+{% endfor %}
+
+/**
+ * Method to show the bot answer
+ * @param {string} answer 
+ * @returns {string} the card to be shown as innerHtml
+ */
+const showMessage = (message, user) => {
+    const alert = document.createElement("div")
+    alert.classList.add("alert", "alert-primary", "w-75")
+    alert.setAttribute("role", "alert")
+    const icon = document.createElement("div")
+    if(user == true){
+        alert.innerHTML = message
+        alert.classList.add("float-end", "text-end")
+        icon.classList.add("human-icon", "ms-4", "d-inline-block")
+        alert.appendChild(icon)
+    } else {
+        alert.classList.add("float-start")
+        icon.classList.add("ai-icon", "me-2", "d-inline-block")
+        alert.innerHTML = message
+        alert.prepend(icon)
+    }
+    const answerContainer = document.getElementById("answer-container")
+    answerContainer.appendChild(alert)
+}
+
+
+const handleChatResponse = (data) => {
+    if (data.status == 200) {
+        showMessage(data.answer, false)
+        chatHistory.push({"role": "assistant", "content": data.answer})
+        console.log(chatHistory)
+        const promptTokens = document.getElementById("prompt-tokens")
+        const completionTokens = document.getElementById("completion-tokens")
+        let newPromptTokens = parseInt(promptTokens.innerText) + parseInt(data.prompt_tokens)
+        let newCompletionTokens = parseInt(completionTokens.innerText) + parseInt(data.comp_tokens)
+        promptTokens.innerText = newPromptTokens
+        completionTokens.innerText = newCompletionTokens
+        createToast(`PROMPT TOKENS: ${data.prompt_tokens} - COMPLETION TOKENS: ${data.comp_tokens}`)
+
+    } else {
+        createToast(data.error)
+    }
+}
+
+const chat = async (element) => {
+    const url = window.location.pathname.split("_histories")[0]
+    const message = document.getElementById("message")
+    chatHistory.push({"role": "human", "content": message.value})
+    showMessage(message.value, true)
+    const headers = {"Content-Type": "application/json"}
+    const response = await fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify({"chat_history": chatHistory})
+    })
+    const data = await response.json()
+    handleChatResponse(data)
+    element.removeAttribute("disabled")
+    element.innerHTML = "Send message"
+}
+
+
+const createSpinner = (element) => {
+    const spinnerSpan = document.createElement("span")
+    const spinnerRole = document.createElement("span")
+    spinnerSpan.classList.add("spinner-border", "spinner-border-sm")
+    spinnerSpan.setAttribute("aria-hidden", "true")
+    spinnerRole.setAttribute("role", "status")
+    spinnerRole.innerText = "Loading..."
+    element.innerHTML = ""
+    element.appendChild(spinnerSpan)
+    element.appendChild(spinnerRole)
+    element.setAttribute("disabled", "true")
+}
+
+const sendButton = document.getElementById("send-message")
+// add event listener to invoke the chatbot with the active settings
+sendButton.addEventListener("click", event => {
+    createSpinner(event.target)
+    chat(event.target)
+    const message = document.getElementById("message")
+    message.value = ""
+})
+
+const saveHistoryButton = document.getElementById("save-history")
+
+const saveHistory = async (url, chatHistoryId) => {
+    const name = document.getElementById("chat-history-name")
+    const payload = {"chat_history": chatHistory, "chat_history_id": chatHistoryId}
+    const headers = {"Content-Type": "application/json"}
+    const response = await fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload)
+    })
+    const data = await response.json()
+    if (data.status == 200) {
+        createToast(data.message)
+    } else {
+        createToast(data.error)
+    }
+}
+
+saveHistoryButton.addEventListener("click", event => {
+    const button = event.target
+    const url = button.getAttribute("data-url")
+    const id = button.getAttribute("data-id")
+    saveHistory(url, id)
+})
+
+</script>
 {% endblock %}

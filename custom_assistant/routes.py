@@ -1305,7 +1305,6 @@ def save_chat_history():
             if chat_history is None:
                 return {"status": 404, "error": "Chat history not found"}
             else:
-                chat_history.name = chat_history_name
                 chat_history.messages = json_chat_history
                 db.session.add(chat_history)
                 db.session.commit()

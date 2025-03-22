@@ -176,11 +176,12 @@ body {
     color: #E5F5FF;
 }
 
-.card-body {
+.card-body, .modal-footer {
     background-color: #E5F5FF;
 }
 
 .modal-body {
+    background-color: #E5F5FF;
     padding: 20px !important;
 }
 
@@ -212,7 +213,6 @@ body {
 #traits-name-value-modal,
 #source-container-modal {
     padding: 8px;
-    border: 1px solid lightgray;
     border-radius: 5px;
     margin: 4px auto;
 }

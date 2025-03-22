@@ -10,6 +10,7 @@ const traitsContainer = document.getElementById("traits-container")
 const deleteModal = document.getElementById('delete-modal')
 const deleteConfirmationButton = document.getElementById("delete-confirmation")
 const sendButton = document.getElementById("send-message")
+const clear = document.getElementById("clear")
 
 let activeAssistant = {
     id: null,
@@ -255,17 +256,22 @@ const showMessage = (message, user) => {
     chatHistory.appendChild(alert)
 }
 
-saveAssistantButton.addEventListener("click", saveOrEditAssistant)
 
-clear.addEventListener("click", resetAssistantFields)
-
-assistantSelector.addEventListener("change", function(e) {
-    const assistantId = $(e.target).val()
-    const url = `${$(e.target).attr("data-url")}${assistantId}`
-    const traitsContainer = document.getElementById("traits-container")
-    traitsContainer.innerHTML = ""
-    getAssistant(url)
-})
+if (saveAssistantButton != null){
+    saveAssistantButton.addEventListener("click", saveOrEditAssistant)
+}
+if(clear != null){
+    clear.addEventListener("click", resetAssistantFields)
+}
+if (assistantSelector != null){
+    assistantSelector.addEventListener("change", function(e) {
+        const assistantId = $(e.target).val()
+        const url = `${$(e.target).attr("data-url")}${assistantId}`
+        const traitsContainer = document.getElementById("traits-container")
+        traitsContainer.innerHTML = ""
+        getAssistant(url)
+    })
+}
 
 for (let editButton of editTraitButtons) {
     editButton.addEventListener("click", function(e){
