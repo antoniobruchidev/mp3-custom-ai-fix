@@ -6,12 +6,28 @@ import hashlib
 
 
 def create_hash(string1, string2):
+    """Method to create a unque hash with three strings
+    two coming from the user info and a secret one.
+    Hashing the three in sequence will give always the same key.
+
+    Args:
+        string1 (str): string from user info
+        string2 (str): string from user info
+
+    Returns:
+        str: unique hex key for password recovery
+    """
     combined = string1 + string2 + os.getenv("FORGOT_PASSWD_KEY")
     hash_object = hmac.new(combined.encode("utf-8"), digestmod=hashlib.sha256)
     return hash_object.hexdigest()
 
 
 def send_activation_email(user):
+    """Method to send the activation email
+
+    Args:
+        user (User): the user instance
+    """
     msg = Message(
         "The Custom Assistant - Please activate your account",
         sender=os.environ.get("MAIL_USERNAME"),
@@ -28,6 +44,14 @@ def send_activation_email(user):
 
 
 def forgot_password_email(user):
+    """Method to send the link the have a new password when forgotten
+
+    Args:
+        user (User): the user instance
+
+    Returns:
+        str: unique hash key for password retrieval
+    """
     msg = Message(
         "The Custom Assistant - Did you forget your password?",
         sender=os.environ.get("MAIL_USERNAME"),

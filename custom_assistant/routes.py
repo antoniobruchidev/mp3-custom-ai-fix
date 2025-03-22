@@ -75,7 +75,7 @@ def start_add() -> dict[str, object]:
 
 @app.post("/chat")
 def bot_answer() -> dict:
-    """Method to invoke the chatbot
+    """Route to invoke the chatbot
 
     Returns:
         dict: answer and tokens usage
@@ -202,7 +202,7 @@ def playground():
 @app.post("/assistants/create")
 @login_required
 def create_or_edit_assistant():
-    """Method to create an assistant
+    """Route to create an assistant
 
     Returns:
         {json}: message or error
@@ -890,7 +890,7 @@ def get_assistants():
 @app.post("/traits/create")
 @login_required
 def create_or_edit_trait():
-    """Route to create a source
+    """Route to create a trait
 
     Returns:
         redirect: assistants page
@@ -956,6 +956,14 @@ def create_or_edit_trait():
 @app.post("/traits/<trait_id>/delete")
 @login_required
 def delete_trait(trait_id):
+    """Route to delete a trait
+
+    Args:
+        trait_id (int): the trait id
+
+    Returns:
+        redirect: get assistants
+    """
     try:
         trait = db.session.get(CharacterTrait, trait_id)
         db.session.delete(trait)
@@ -978,6 +986,14 @@ def delete_trait(trait_id):
 @app.post("/sources/<source_id>/delete")
 @login_required
 def delete_source(source_id):
+    """Route to delete a given source
+
+    Args:
+        source_id (int): the source id
+
+    Returns:
+        redirect: get collections
+    """
     try:
         collections = (
             db.session.query(Collection)
@@ -1019,6 +1035,14 @@ def delete_source(source_id):
 @app.post("/collections/<collection_id>/delete")
 @login_required
 def delete_collection(collection_id):
+    """Route to delete a given collection
+
+    Args:
+        collection_id (int): the collection id
+
+    Returns:
+        redirect: get collections
+    """
     try:
         collection = db.session.get(Collection, collection_id)
         db.session.delete(collection)
@@ -1041,6 +1065,14 @@ def delete_collection(collection_id):
 @app.post("/assistants/<assistant_id>/delete")
 @login_required
 def delete_assistant(assistant_id):
+    """Route to delete a given assistant
+
+    Args:
+        assistant_id (int): the assistant if
+
+    Returns:
+        redirect: get assistants
+    """
     try:
         assistant = db.session.get(Assistant, assistant_id)
         db.session.delete(assistant)
@@ -1063,6 +1095,14 @@ def delete_assistant(assistant_id):
 @app.get("/collections/<collection_id>")
 @login_required
 def get_collection(collection_id):
+    """Route to get a given collection
+
+    Args:
+        collection_id (int): the collection id
+
+    Returns:
+        dict: status and message/error
+    """
     try:
         collection = db.session.get(Collection, int(collection_id))
         if collection:
@@ -1099,6 +1139,14 @@ def get_collection(collection_id):
 @app.get("/assistants/<assistant_id>")
 @login_required
 def get_assistant(assistant_id):
+    """Route to get a given assistant
+
+    Args:
+        assistant_id (int): the assistant id
+
+    Returns:
+        dict: status and message/error
+    """
     try:
         assistant = db.session.get(Assistant, int(assistant_id))
         if assistant:
@@ -1140,6 +1188,11 @@ def get_assistant(assistant_id):
 @app.get("/profile")
 @login_required
 def profile():
+    """Route to the profile page
+
+    Returns:
+        render_template: the profile page
+    """
     assistants_limit = os.getenv("ASSISTANT_SLOTS", 5)
     traits_limit = os.getenv("TRAIT_SLOTS", 20)
     collections_limit = os.getenv("COLLECTION_SLOTS", 3)
@@ -1221,6 +1274,11 @@ def profile():
 @app.route("/users/change_password", methods=["GET", "POST"])
 @login_required
 def password_change():
+    """Route to change the password from profile page
+
+    Returns:
+        redirect: profile page
+    """
     if request.method == "POST":
         try:
             user = db.session.get(User, current_user.id)
@@ -1252,6 +1310,14 @@ def password_change():
 @app.get("/daily_tokens/<daily_tokens_id>")
 @login_required
 def get_tokens(daily_tokens_id):
+    """Route to get the tokens usage
+
+    Args:
+        daily_tokens_id (int): the id of the daily token usage
+
+    Returns:
+        dict: status and message/error
+    """
     if daily_tokens_id == "0":
         return {"status": 200, "message": "do nothing"}
     try:
@@ -1276,9 +1342,24 @@ def get_tokens(daily_tokens_id):
 @app.get("/delete_account/<user_id>")
 @login_required
 def delete_account(user_id):
+    """Route to delete the user account
+
+    Args:
+        user_id (int): the user id
+
+    Returns:
+        render_template: login
+    """
+    g_client_id = os.getenv("GOOGLE_CLIENT_ID")
     try:
         if user_id == current_user.id:
-            pass
+            logout_user()
+            user = db.session.get(User, user_id)
+            db.session.delete(user)
+            db.session.commit()
+            db.session.close()
+            error = "Successfully deleted the account"
+            return render_template("login.html", error=error, g_client_id=g_client_id)
         else:
             flash("Permission denied")
             return redirect(url_for("home"))
@@ -1290,6 +1371,11 @@ def delete_account(user_id):
 @app.post("/chat_histories/save")
 @login_required
 def save_chat_history():
+    """Route to save a chat history
+
+    Returns:
+        dict: status and message/error
+    """
     if not request.is_json:
         return {"status": 500, "error": "Bad request"}
     try:
@@ -1326,6 +1412,11 @@ def save_chat_history():
 @app.get("/chat_histories")
 @login_required
 def get_chat_histories():
+    """Route to get the user chat histories
+
+    Returns:
+        render_template: chat histories page
+    """
     try:
         user_chat_histories = (
             db.session.query(ChatHistory)
@@ -1355,6 +1446,14 @@ def get_chat_histories():
 @app.get("/chat_histories/<chat_history_id>")
 @login_required
 def get_chat_history(chat_history_id):
+    """Route to get a single chat history
+
+    Args:
+        chat_history_id (int): chat history id
+
+    Returns:
+        render_template: the chat history page
+    """
     try:
         chat_history = db.session.get(ChatHistory, chat_history_id)
         messages = chat_history.messages
@@ -1363,15 +1462,23 @@ def get_chat_history(chat_history_id):
         )
     except OperationalError:
         flash("Operational error: Please retry")
-        return redirect(url_for("profile"))
+        return redirect(url_for("get_chat_histories"))
     except Exception as e:
         flash(f"Unknown error: {e} Please retry")
-        return redirect(url_for("profile"))
+        return redirect(url_for("get_chat_histories"))
 
 
 @app.post("/chat_histories/<chat_history_id>/delete")
 @login_required
 def delete_chat_history(chat_history_id):
+    """Route to delete a chat history
+
+    Args:
+        chat_history_id (int): chat history id
+
+    Returns:
+        redirect: get chat histories
+    """
     try:
         chat_history = db.session.get(ChatHistory, chat_history_id)
         if chat_history is None:

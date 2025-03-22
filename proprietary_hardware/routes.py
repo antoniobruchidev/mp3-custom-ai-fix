@@ -110,7 +110,7 @@ def query():
     """Method to query the documents ingested in a collection with a question
 
     Returns:
-        _type_: _description_
+        dict: status and info
     """
     answer = ""
     error = ""
@@ -133,6 +133,11 @@ def query():
 
 @app.post("/chat_with_history")
 def chat_with_history():
+    """Route to enable chat history
+
+    Returns:
+        dict: status and info
+    """
     if not request.is_json:
         return {"status": 500, "error": "Bad request"}
     chat_history = request.json.get("chat_history")

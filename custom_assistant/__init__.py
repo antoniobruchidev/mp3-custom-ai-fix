@@ -10,13 +10,15 @@ from flask import Flask
 
 
 UPLOAD_FOLDER = "tmp"
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "pdf"}
 HEROKU_DOMAIN = os.getenv("HEROKU_DOMAIN")
 
 load_dotenv()
 
+
 class Base(DeclarativeBase):
-  pass
+    pass
+
 
 db = SQLAlchemy(model_class=Base)
 
@@ -33,11 +35,11 @@ app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME")
 app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD")
 app.config["MAIL_USE_TLS"] = True
 app.config["MAIL_USE_SSL"] = False
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
 mail = Mail(app)
 
-#setting OAUTHLIB insecure transport to 1
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+# setting OAUTHLIB insecure transport to 1
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 from custom_assistant import routes

@@ -191,6 +191,13 @@ def update_collection_and_task(collection_id, source_id, timestamp):
 
 
 def ended_ingestion_email(user_id, collection_id, source_id):
+    """Method to send an email after finished ingesting a document
+
+    Args:
+        user_id (int): the user id
+        collection_id (int): the collection id
+        source_id (int): the source id
+    """
     with app.app_context():
         try:
             user = db.session.get(User, user_id)
