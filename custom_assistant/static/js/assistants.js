@@ -350,8 +350,6 @@ const createSpinner = (element) => {
     element.setAttribute("disabled", "true")
 }
 
-let chatHistory = []
-
 
 const initializeAssistantChatHistory = () => {
     const base_prompt = document.getElementById("assistant-base-prompt")
