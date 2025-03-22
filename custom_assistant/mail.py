@@ -4,12 +4,10 @@ from custom_assistant import mail, HEROKU_DOMAIN
 import hmac
 import hashlib
 
+
 def create_hash(string1, string2):
     combined = string1 + string2 + os.getenv("FORGOT_PASSWD_KEY")
-    hash_object = hmac.new(
-        combined.encode('utf-8'), 
-        digestmod=hashlib.sha256
-    )
+    hash_object = hmac.new(combined.encode("utf-8"), digestmod=hashlib.sha256)
     return hash_object.hexdigest()
 
 
@@ -27,7 +25,7 @@ def send_activation_email(user):
         "Thanks."
     )
     mail.send(msg)
-    
+
 
 def forgot_password_email(user):
     msg = Message(

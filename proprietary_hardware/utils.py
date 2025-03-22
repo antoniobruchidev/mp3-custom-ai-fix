@@ -10,9 +10,13 @@ import torch
 import torch.multiprocessing as mp
 from werkzeug.utils import secure_filename
 from proprietary_hardware import ALLOWED_EXTENSIONS, UPLOAD_FOLDER, app, db, mail
-from proprietary_hardware.models import BackgroundIngestionTask, Collection, Source, User
+from proprietary_hardware.models import (
+    BackgroundIngestionTask,
+    Collection,
+    Source,
+    User,
+)
 from flask_mail import Message
-
 
 
 def get_proprietary_hardware_status() -> bool:
@@ -55,15 +59,17 @@ def get_embedding_model(use_gpu):
         SentencTransformersEmbeddingFunction: initialized function for gpu or cpu
     """
     if use_gpu and bool(int(os.getenv("USE_PROPRIETARY_HARDWARE"))):
-        return SentenceTransformersEmbeddingFunction(SentenceTransformer(
-            model_name_or_path="intfloat/multilingual-e5-large",
-            device="cuda"
-        ))
+        return SentenceTransformersEmbeddingFunction(
+            SentenceTransformer(
+                model_name_or_path="intfloat/multilingual-e5-large", device="cuda"
+            )
+        )
     else:
-        return SentenceTransformersEmbeddingFunction(SentenceTransformer(
-            model_name_or_path="intfloat/multilingual-e5-large",
-            device="cpu"
-        ))
+        return SentenceTransformersEmbeddingFunction(
+            SentenceTransformer(
+                model_name_or_path="intfloat/multilingual-e5-large", device="cpu"
+            )
+        )
 
 
 def is_gpu_embedding_model_available():
@@ -99,7 +105,7 @@ def update_collection_and_task(collection_id, source_id, timestamp):
     Args:
         collection_id (int): the collection id
         source_id (int): the source id
-        timestamp (float): timestamp of the last version of the 
+        timestamp (float): timestamp of the last version of the
         vectorstore database uploaded to aws.
 
     Returns:
@@ -110,10 +116,14 @@ def update_collection_and_task(collection_id, source_id, timestamp):
             collection = db.session.get(Collection, collection_id)
             user = db.session.get(User, collection.user_id)
             source = db.session.get(Source, source_id)
-            task = db.session.query(BackgroundIngestionTask).filter(
-                BackgroundIngestionTask.collection_id==collection_id,
-                BackgroundIngestionTask.source_id==source_id
-            ).first()
+            task = (
+                db.session.query(BackgroundIngestionTask)
+                .filter(
+                    BackgroundIngestionTask.collection_id == collection_id,
+                    BackgroundIngestionTask.source_id == source_id,
+                )
+                .first()
+            )
             task.result = True
             task.ended = True
             db.session.add(task)
@@ -130,10 +140,14 @@ def update_collection_and_task(collection_id, source_id, timestamp):
                 collection = db.session.get(Collection, collection_id)
                 user = db.session.get(User, collection.user_id)
                 source = db.session.get(Source, source_id)
-                task = db.session.query(BackgroundIngestionTask).filter(
-                    BackgroundIngestionTask.collection_id==collection_id,
-                    BackgroundIngestionTask.source_id==source_id
-                ).first()
+                task = (
+                    db.session.query(BackgroundIngestionTask)
+                    .filter(
+                        BackgroundIngestionTask.collection_id == collection_id,
+                        BackgroundIngestionTask.source_id == source_id,
+                    )
+                    .first()
+                )
                 task.result = True
                 task.ended = True
                 db.session.add(task)
@@ -153,10 +167,14 @@ def update_collection_and_task(collection_id, source_id, timestamp):
                 collection = db.session.get(Collection, collection_id)
                 user = db.session.get(User, collection.user_id)
                 source = db.session.get(Source, source_id)
-                task = db.session.query(BackgroundIngestionTask).filter(
-                    BackgroundIngestionTask.collection_id==collection_id,
-                    BackgroundIngestionTask.source_id==source_id
-                ).first()
+                task = (
+                    db.session.query(BackgroundIngestionTask)
+                    .filter(
+                        BackgroundIngestionTask.collection_id == collection_id,
+                        BackgroundIngestionTask.source_id == source_id,
+                    )
+                    .first()
+                )
                 task.result = True
                 task.ended = True
                 db.session.add(task)
@@ -170,7 +188,7 @@ def update_collection_and_task(collection_id, source_id, timestamp):
                 db.session.close()
                 return False
         return True
-    
+
 
 def ended_ingestion_email(user_id, collection_id, source_id):
     with app.app_context():
@@ -215,22 +233,20 @@ def ended_ingestion_email(user_id, collection_id, source_id):
 
 def history_chat(chat_history):
     llm = ChatOllama(
-        model=os.getenv("QWEN_MODEL"),
-        temperature=0.8,
-        disable_streaming=True
+        model=os.getenv("QWEN_MODEL"), temperature=0.8, disable_streaming=True
     )
     messages = []
     for message in chat_history:
-        if message['role'] == "system":
-            messages.append(SystemMessage(content=message['content']))
-        elif message['role'] == "human":
-            messages.append(HumanMessage(content=message['content']))
+        if message["role"] == "system":
+            messages.append(SystemMessage(content=message["content"]))
+        elif message["role"] == "human":
+            messages.append(HumanMessage(content=message["content"]))
         else:
-            messages.append(AIMessage(content=message['content']))
-    
+            messages.append(AIMessage(content=message["content"]))
+
     answer = llm.invoke(messages)
     return {
         "answer": answer.content,
-        "prompt_tokens": answer.usage_metadata['input_tokens'],
-        "comp_tokens": answer.usage_metadata['output_tokens']
+        "prompt_tokens": answer.usage_metadata["input_tokens"],
+        "comp_tokens": answer.usage_metadata["output_tokens"],
     }

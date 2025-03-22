@@ -2,6 +2,7 @@ import json
 import os
 from dotenv import load_dotenv
 import requests
+
 load_dotenv()
 
 registered_users_model = os.getenv("QWUEN_MODEL")
@@ -25,16 +26,14 @@ You MUST NOT share your logic.
 """
 
 
-
-
 def chat(
     prompt=None,
     message=None,
     traits="",
     chat_history=None,
     question=None,
-    collection_id=None
-    ):
+    collection_id=None,
+):
     """Method to create
 
     Args:
@@ -44,14 +43,11 @@ def chat(
     """
     response = None
     if question is not None and collection_id is not None:
-        payload = {
-            "question": question,
-            "collection_id": collection_id
-        }
+        payload = {"question": question, "collection_id": collection_id}
         retriever_url = f"{url.split('11434')[0]}5001/query"
         response = requests.request("POST", retriever_url, json=payload)
         data = response.json()
-        if data['status'] == 200:
+        if data["status"] == 200:
             return {"status": 200, "message": data["message"]}
         else:
             return {"status": 400, "error": data["error"]}
@@ -61,18 +57,14 @@ def chat(
         response = requests.request("POST", ollama_url, json=payload)
         if response.status_code == 200:
             data = response.json()
-            return data['message'], data['prompt_tokens'], data['comp_tokens']
+            return data["message"], data["prompt_tokens"], data["comp_tokens"]
     if prompt is not None and traits != "":
         messages = [
             {
-            "role": "system", "content": system_prompt.format(
-                    prompt=prompt,
-                    traits=traits
-                )
+                "role": "system",
+                "content": system_prompt.format(prompt=prompt, traits=traits),
             },
-            {
-            "role": "user", "content": message
-            },
+            {"role": "user", "content": message},
         ]
     elif prompt is not None and traits == "":
         messages = [
@@ -86,12 +78,12 @@ def chat(
         "temperature": 1,
         "top_p": 0.8,
         "stream": False,
-        }
+    }
 
     response = requests.request("POST", url, json=payload)
     ai_message = response.json()
-    prompt_tokens = ai_message['usage']['prompt_tokens']
-    completion_tokens = ai_message['usage']['completion_tokens']
-    answer = ai_message['choices'][0]['message']['content']
+    prompt_tokens = ai_message["usage"]["prompt_tokens"]
+    completion_tokens = ai_message["usage"]["completion_tokens"]
+    answer = ai_message["choices"][0]["message"]["content"]
 
     return answer, prompt_tokens, completion_tokens

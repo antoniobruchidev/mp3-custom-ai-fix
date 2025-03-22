@@ -6,15 +6,13 @@ from sqlalchemy.exc import OperationalError, PendingRollbackError
 from proprietary_hardware.utils import get_proprietary_hardware_status, history_chat
 from proprietary_hardware import app, db
 from proprietary_hardware.tasks import ingest_data, proprietary_celery, add
-from proprietary_hardware.models import (
-    BackgroundIngestionTask,
-     Collection
-)
+from proprietary_hardware.models import BackgroundIngestionTask, Collection
 from proprietary_hardware.utils import is_gpu_embedding_model_available
 from proprietary_hardware.vectorstore import query_with_retriever
 
 
 # Test routes
+
 
 @app.get("/result/<id>")
 def task_result(id: str) -> dict[str, object]:
@@ -39,10 +37,7 @@ def start_add() -> dict[str, object]:
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return {
-        "page": "not found",
-        "status": "404"
-    }
+    return {"page": "not found", "status": "404"}
 
 
 # WEB API
@@ -65,12 +60,12 @@ def status():
         gpu_status = False
         status = 500
     chat_server = get_proprietary_hardware_status()
-        
+
     return {
         "status": status,
         "gpu_status": gpu_status,
         "embedding_server": embedding_server,
-        "chat_server": chat_server
+        "chat_server": chat_server,
     }
 
 
@@ -87,9 +82,7 @@ def ingest():
             task = db.session.get(BackgroundIngestionTask, task_id)
             collection = db.session.get(Collection, task.collection_id)
             result = ingest_data.delay(
-                task.collection_id,
-                task.source_id,
-                collection.user_id
+                task.collection_id, task.source_id, collection.user_id
             )
             task.proprietary_task_id = result.id
             db.session.add(task)
@@ -99,9 +92,7 @@ def ingest():
                 task = db.session.get(BackgroundIngestionTask, task_id)
                 collection = db.session.get(Collection, task.collection_id)
                 result = ingest_data.delay(
-                    task.collection_id,
-                    task.source_id,
-                    collection.user_id
+                    task.collection_id, task.source_id, collection.user_id
                 )
                 task.proprietary_task_id = result.id
                 db.session.add(task)
@@ -109,12 +100,10 @@ def ingest():
             except Exception as e:
                 {"status": 500, "error": e}
         db.session.close()
-        return {
-            "status": 200,
-            "message" : f"Started job {result.id} for task {task_id}"}
+        return {"status": 200, "message": f"Started job {result.id} for task {task_id}"}
     else:
         return {"status": 403}
-    
+
 
 @app.post("/query")
 def query():
@@ -127,27 +116,19 @@ def query():
     error = ""
     question = request.json.get("question")
     try:
-        collection = db.session.get(
-            Collection, request.json.get("collection_id")
-        )
+        collection = db.session.get(Collection, request.json.get("collection_id"))
     except OperationalError as e:
         try:
-            collection = db.session.get(
-                Collection, request.json.get("collection_id")
-            )
+            collection = db.session.get(Collection, request.json.get("collection_id"))
         except OperationalError as e:
             error = e
     answer = query_with_retriever(
         question=request.json.get("question"),
         collection=collection.collection_name,
-        user_id=collection.user_id
+        user_id=collection.user_id,
     )
     db.session.close()
-    return {
-        "status": 200,
-        "message": answer,
-        "error": error
-        }
+    return {"status": 200, "message": answer, "error": error}
 
 
 @app.post("/chat_with_history")
@@ -158,7 +139,7 @@ def chat_with_history():
     answer = history_chat(json.loads(chat_history))
     return {
         "status": 200,
-        "message": answer['answer'],
-        "prompt_tokens": answer['prompt_tokens'],
-        "comp_tokens": answer['comp_tokens']}
-    
+        "message": answer["answer"],
+        "prompt_tokens": answer["prompt_tokens"],
+        "comp_tokens": answer["comp_tokens"],
+    }

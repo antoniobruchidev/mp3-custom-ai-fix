@@ -7,8 +7,23 @@ import requests
 from custom_assistant import app, db, argon2
 from custom_assistant.inference import chat
 from custom_assistant.mail import forgot_password_email, send_activation_email
-from custom_assistant.models import Assistant, CharacterTrait, ChatHistory, Collection, DailyTokens, User, BackgroundIngestionTask
-from flask_login import AnonymousUserMixin, LoginManager, current_user, login_required, login_user, logout_user
+from custom_assistant.models import (
+    Assistant,
+    CharacterTrait,
+    ChatHistory,
+    Collection,
+    DailyTokens,
+    User,
+    BackgroundIngestionTask,
+)
+from flask_login import (
+    AnonymousUserMixin,
+    LoginManager,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
 from sqlalchemy.exc import OperationalError
 from psycopg2.errors import NotNullViolation
 from custom_assistant.models import Source
@@ -21,6 +36,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+
 @login_manager.user_loader
 def load_user(user_id):
     try:
@@ -31,9 +47,10 @@ def load_user(user_id):
             user = db.session.get(User, user_id)
         except:
             return AnonymousUserMixin()
-        
+
 
 # Test routes
+
 
 @app.get("/result/<id>")
 def task_result(id: str) -> dict[str, object]:
@@ -65,7 +82,7 @@ def bot_answer() -> dict:
     """
     prompt = request.form.get("base-prompt", None)
     traits = request.form.get("traits", None)
-    message= request.form.get("message", None)
+    message = request.form.get("message", None)
     question = request.form.get("question", None)
     collection_id = request.form.get("collection-id", None)
     user = None
@@ -75,10 +92,7 @@ def bot_answer() -> dict:
             user = db.session.get(User, current_user.id)
     except OperationalError as e:
         db.session.close()
-        return {
-            "status": 500,
-            "error": f"Operational error: {e} Please retry..."
-        }
+        return {"status": 500, "error": f"Operational error: {e} Please retry..."}
     if question is not None and collection_id is not None:
         answer = chat(question=question, collection_id=collection_id)
         prompt_tokens = None
@@ -91,21 +105,18 @@ def bot_answer() -> dict:
                 "status": 200,
                 "answer": answer,
                 "prompt_tokens": prompt_tokens,
-                "comp_tokens": comp_tokens                
+                "comp_tokens": comp_tokens,
             }
         else:
-            return {
-                "status": 500,
-                "error": "Bad request"
-            }
+            return {"status": 500, "error": "Bad request"}
     else:
-        answer, prompt_tokens, comp_tokens = chat(
-            prompt, message, traits
-        )
+        answer, prompt_tokens, comp_tokens = chat(prompt, message, traits)
         try:
-            daily_tokens = db.session.query(DailyTokens).filter(
-                DailyTokens.day==datetime.datetime.now().date().isoformat()
-            ).first()
+            daily_tokens = (
+                db.session.query(DailyTokens)
+                .filter(DailyTokens.day == datetime.datetime.now().date().isoformat())
+                .first()
+            )
             if daily_tokens is not None:
                 daily_tokens.prompt_tokens += prompt_tokens
                 daily_tokens.completion_tokens += comp_tokens
@@ -114,7 +125,7 @@ def bot_answer() -> dict:
                     day=datetime.datetime.now().date().isoformat(),
                     user_id=user.id,
                     prompt_tokens=prompt_tokens,
-                    completion_tokens=comp_tokens
+                    completion_tokens=comp_tokens,
                 )
             db.session.add(daily_tokens)
             db.session.commit()
@@ -128,18 +139,15 @@ def bot_answer() -> dict:
         "answer": answer,
         "prompt_tokens": prompt_tokens,
         "comp_tokens": comp_tokens,
-        "daily_tokens_error": daily_tokens_error
-        }
+        "daily_tokens_error": daily_tokens_error,
+    }
 
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return {
-        "error": "Page not found",
-        "status": "404"
-    }
+    return {"error": "Page not found", "status": "404"}
 
-       
+
 @app.get("/")
 def home():
     """Route to home
@@ -163,15 +171,17 @@ def playground():
     traits_available = 0
     try:
         if current_user.is_authenticated:
-            assistants = db.session.query(Assistant).filter(
-                Assistant.user_id==current_user.id
-            ).all()
-            traits = db.session.query(CharacterTrait).filter(
-                CharacterTrait.user_id==current_user.id
-            ).all()
-        assistants_available = int(os.getenv("ASSISTANT_SLOTS", 5)) - len(
-            assistants
-        )
+            assistants = (
+                db.session.query(Assistant)
+                .filter(Assistant.user_id == current_user.id)
+                .all()
+            )
+            traits = (
+                db.session.query(CharacterTrait)
+                .filter(CharacterTrait.user_id == current_user.id)
+                .all()
+            )
+        assistants_available = int(os.getenv("ASSISTANT_SLOTS", 5)) - len(assistants)
         traits_available = int(os.getenv("TRAIT_SLOTS", 20)) - len(traits)
         return render_template(
             "playground.html",
@@ -181,13 +191,12 @@ def playground():
             assistants_limit=os.getenv("ASSISTANT_SLOTS", 5),
             traits_limit=os.getenv("TRAIT_SLOTS", 20),
             assistants=assistants,
-            traits=traits
-            )
+            traits=traits,
+        )
     except OperationalError as e:
         db.session.rollback()
         db.session.close()
         return redirect(playground)
-        
 
 
 @app.post("/assistants/create")
@@ -204,22 +213,24 @@ def create_or_edit_assistant():
     trait_limit = int(os.getenv("TRAIT_SLOTS", 20))
     assistant_limit = int(os.getenv("ASSISTANT_SLOTS", 5))
     try:
-        if data['edit']:
-            assistant = db.session.get(Assistant, data['assistant_id'])
-            assistant.name = data['assistant_name']
-            assistant.prompt = data['base_prompt']
+        if data["edit"]:
+            assistant = db.session.get(Assistant, data["assistant_id"])
+            assistant.name = data["assistant_name"]
+            assistant.prompt = data["base_prompt"]
             db.session.add(assistant)
             db.session.commit()
             db.session.close()
             flash("Assistant modified successfully")
             return {"status": 200}
         user = db.session.get(User, current_user.id)
-        user_traits = db.session.query(CharacterTrait).filter(
-            CharacterTrait.user_id==user.id
-        ).all()
-        user_assistants = db.session.query(Assistant).filter(
-            Assistant.user_id==user.id
-        ).all()
+        user_traits = (
+            db.session.query(CharacterTrait)
+            .filter(CharacterTrait.user_id == user.id)
+            .all()
+        )
+        user_assistants = (
+            db.session.query(Assistant).filter(Assistant.user_id == user.id).all()
+        )
     except OperationalError as e:
         db.session.rollback()
         db.session.close()
@@ -228,52 +239,54 @@ def create_or_edit_assistant():
         db.session.rollback()
         db.session.close()
         return {"status": 500, "error": f"Please try again... Operational error: {e}"}
-        
+
     assistant_names = [assistant.name for assistant in user_assistants]
     trait_names = [f"{trait.trait}: {trait.value}" for trait in user_traits]
     traits_to_be_saved = []
-    for trait in data['traits']:
-        trait_value = trait['value'].replace("\n", "").replace(" ", "")
+    for trait in data["traits"]:
+        trait_value = trait["value"].replace("\n", "").replace(" ", "")
         t = f"{trait['trait']}: {trait_value}"
         traits_to_be_saved.append(t)
     for trait in traits_to_be_saved:
         if trait in trait_names:
             index = traits_to_be_saved.index(trait)
             traits_to_be_saved.pop(index)
-    if data['assistant_name'] in assistant_names:
+    if data["assistant_name"] in assistant_names:
         return {"status": 400, "error": "You already have an assistant with that name"}
     if assistant_limit == len(user_assistants):
         return {"status": 400, "error": "Not enough assistant slots available"}
-    if trait_limit == len(user_traits) + len(data['traits']):
+    if trait_limit == len(user_traits) + len(data["traits"]):
         return {"status": 400, "error": "Not enough trait slots available"}
     try:
         assistant = Assistant(
-            user_id=user.id,
-            name=data['assistant_name'],
-            prompt=data['base_prompt']
+            user_id=user.id, name=data["assistant_name"], prompt=data["base_prompt"]
         )
         db.session.add(assistant)
         db.session.commit()
         db.session.close()
-        for trait in data['traits']:
-            trait_value = trait['value'].replace("\n", "").replace(" ", "")
+        for trait in data["traits"]:
+            trait_value = trait["value"].replace("\n", "").replace(" ", "")
             t = f"{trait['trait']}: {trait_value}"
             if t in traits_to_be_saved:
                 character_trait = CharacterTrait(
                     user_id=user.id,
-                    trait=trait['trait'],
+                    trait=trait["trait"],
                     value=trait_value,
-                    reason_why=trait['reason_why']
+                    reason_why=trait["reason_why"],
                 )
                 db.session.add(character_trait)
                 db.session.commit()
                 db.session.close()
             else:
-                character_trait = db.session.query(CharacterTrait).filter(
-                    CharacterTrait.user_id==user.id,
-                    CharacterTrait.trait==trait['trait'],
-                    CharacterTrait.value==trait_value
-                ).first()
+                character_trait = (
+                    db.session.query(CharacterTrait)
+                    .filter(
+                        CharacterTrait.user_id == user.id,
+                        CharacterTrait.trait == trait["trait"],
+                        CharacterTrait.value == trait_value,
+                    )
+                    .first()
+                )
             assistant.traits.append(character_trait)
             db.session.add(assistant)
             db.session.commit()
@@ -286,7 +299,9 @@ def create_or_edit_assistant():
         db.session.rollback()
         db.session.close()
         return {"status": 500, "error": e}
-    flash(f"name: {data['assistant_name']} - base prompt: {data['base_prompt']} - traits: {data['traits']}")
+    flash(
+        f"name: {data['assistant_name']} - base prompt: {data['base_prompt']} - traits: {data['traits']}"
+    )
     return {"status": 200}
 
 
@@ -304,27 +319,31 @@ def get_collections():
     chat_server, embedding_server = get_proprietary_hardware_status()
     if not embedding_server:
         if timestamp == 0:
-            app.config["PROPRIETARY_HARDWARE_DOWN"] = datetime.datetime.now().timestamp()
+            app.config["PROPRIETARY_HARDWARE_DOWN"] = (
+                datetime.datetime.now().timestamp()
+            )
         timestamp = datetime.datetime.fromtimestamp(
             app.config["PROPRIETARY_HARDWARE_DOWN"]
-            ).isoformat()
+        ).isoformat()
     else:
         app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
     if current_user.is_authenticated:
         try:
-            collections = db.session.query(Collection).filter(
-                Collection.user_id==current_user.id
-            ).all()
+            collections = (
+                db.session.query(Collection)
+                .filter(Collection.user_id == current_user.id)
+                .all()
+            )
             c_sources = [collection.sources for collection in collections]
             collections_with_sources = zip(collections, c_sources)
-            sources = db.session.query(Source).filter(
-                Source.user_id==current_user.id
-            ).all()
-            
+            sources = (
+                db.session.query(Source).filter(Source.user_id == current_user.id).all()
+            )
+
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
-            return redirect(url_for('get_collections'))
+            return redirect(url_for("get_collections"))
         collections_available = collections_limit - len(collections)
         sources_available = sources_limit - len(sources)
         return render_template(
@@ -335,13 +354,13 @@ def get_collections():
             collections_available=collections_available,
             sources_available=sources_available,
             sources=sources,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
     else:
         return redirect(url_for("login"))
 
 
-@app.route("/register", methods=['GET', 'POST'])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     """Route to create a user
 
@@ -356,13 +375,15 @@ def register():
         try:
             user = User(email=email).sign_up_with_email(
                 request.form.get("password", None),
-                request.form.get("confirm-password", None)
+                request.form.get("confirm-password", None),
             )
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
             error = f"Operational error - please retry..."
-            return render_template("register.html", g_client_id=g_client_id, error=error)
+            return render_template(
+                "register.html", g_client_id=g_client_id, error=error
+            )
         if user is not None:
             db.session.add(user)
             db.session.commit()
@@ -372,11 +393,7 @@ def register():
             return render_template("login.html", g_client_id=g_client_id, error=error)
         else:
             error = f"Email {user.email} already present"
-            return render_template(
-                "login.html",
-                error=error,
-                g_client_id=g_client_id
-            )
+            return render_template("login.html", error=error, g_client_id=g_client_id)
     else:
         return render_template("register.html", g_client_id=g_client_id)
 
@@ -403,10 +420,12 @@ def verify_user(user_id):
         db.session.close()
         error = f"Operational error: {e} - please retry..."
         return render_template("login.html", g_client_id=g_client_id, error=error)
-    return render_template("login.html", g_client_id=g_client_id, error="Account verified.")
-    
+    return render_template(
+        "login.html", g_client_id=g_client_id, error="Account verified."
+    )
 
-@app.route("/login", methods=['GET', 'POST'])
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
     """Route to login
 
@@ -420,14 +439,11 @@ def login():
             google_id = request.form.get("google-id", None)
             email = request.form.get("email", None)
             if google_id is not None:
-                user = db.session.query(User).filter(
-                    User.google_id==google_id
-                ).first()
+                user = (
+                    db.session.query(User).filter(User.google_id == google_id).first()
+                )
                 if user is None:
-                    user = User(
-                        google_id=google_id,
-                        email=email
-                    ).sign_up_with_google()
+                    user = User(google_id=google_id, email=email).sign_up_with_google()
                     db.session.add(user)
                     db.session.commit()
                     db.session.close()
@@ -445,7 +461,7 @@ def login():
                         password_check = user.check_password(
                             request.form.get("password", None)
                         )
-                        
+
                         if password_check:
                             login_user(user)
                             flash("logged in")
@@ -453,26 +469,20 @@ def login():
                         else:
                             error = "Invalid credentials"
                             return render_template(
-                                "login.html",
-                                error=error,
-                                g_client_id=g_client_id
+                                "login.html", error=error, g_client_id=g_client_id
                             )
                     else:
                         send_activation_email(user)
                         error = f"""User not verified - please verify 
                         from the email sent at {user.email}"""
                         return render_template(
-                                "login.html",
-                                error=error,
-                                g_client_id=g_client_id
-                            )
+                            "login.html", error=error, g_client_id=g_client_id
+                        )
                 else:
                     error = "Email not found"
                     return render_template(
-                                "login.html",
-                                error=error,
-                                g_client_id=g_client_id
-                            )
+                        "login.html", error=error, g_client_id=g_client_id
+                    )
         return render_template("login.html", g_client_id=g_client_id)
     except OperationalError as e:
         db.session.rollback()
@@ -480,9 +490,9 @@ def login():
         return render_template(
             "login.html",
             g_client_id=g_client_id,
-            error=f"Operational Error: {e} - Please retry..."
+            error=f"Operational Error: {e} - Please retry...",
         )
-    
+
 
 @app.get("/forgot_password/<email>")
 def forgot_password(email):
@@ -495,7 +505,7 @@ def forgot_password(email):
         json: a message or an error
     """
     try:
-        user = db.session.query(User).filter(User.email==email).first()
+        user = db.session.query(User).filter(User.email == email).first()
         if user is not None:
             user.forgot_passwd_url = forgot_password_email(user)
             db.session.add(user)
@@ -503,7 +513,8 @@ def forgot_password(email):
             db.session.close()
             return {
                 "status": 200,
-                "message": "An email has been sent to you to change your password."}
+                "message": "An email has been sent to you to change your password.",
+            }
         else:
             return {"status": 404, "error": "Email not found"}
     except OperationalError as e:
@@ -525,19 +536,15 @@ def change_password(hash):
     """
     g_client_id = os.getenv("GOOGLE_CLIENT_ID")
     try:
-        user = db.session.query(User).filter(User.forgot_passwd_url==hash).first()
+        user = db.session.query(User).filter(User.forgot_passwd_url == hash).first()
     except OperationalError:
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('change_password', hash=hash))
+        return redirect(url_for("change_password", hash=hash))
     if user is None:
         message = "No users password change at this url"
-        return render_template(
-            "login.html",
-            error=message,
-            g_client_id=g_client_id
-        )
-    else:    
+        return render_template("login.html", error=message, g_client_id=g_client_id)
+    else:
         if request.method == "POST":
             try:
                 user.password = argon2.generate_password_hash(
@@ -552,19 +559,12 @@ def change_password(hash):
                 db.session.close()
                 message = "Operational error: {e} - Please retry..."
                 return render_template(
-            "login.html",
-            error=message,
-            g_client_id=g_client_id
-        )
-            return render_template(
-                "login.html",
-                g_client_id=g_client_id,
-                error=message
-            )
+                    "login.html", error=message, g_client_id=g_client_id
+                )
+            return render_template("login.html", g_client_id=g_client_id, error=message)
         else:
-            return render_template(
-                "forgot_password.html", hash=hash, user=user
-            )
+            return render_template("forgot_password.html", hash=hash, user=user)
+
 
 @app.route("/logout")
 @login_required
@@ -575,23 +575,24 @@ def logout():
         redirect: home
     """
     logout_user()
-    return redirect(url_for('home'))
+    return redirect(url_for("home"))
 
 
 @app.get("/proprietary_hardware_status")
 def get_status():
-    """Method to get the proprietary hardware status - Test route
-    """
+    """Method to get the proprietary hardware status - Test route"""
     chat_server, embedding_server = get_proprietary_hardware_status()
     if not embedding_server:
         if app.config["PROPRIETARY_HARDWARE_DOWN"] == 0:
-            app.config["PROPRIETARY_HARDWARE_DOWN"] = datetime.datetime.now().timestamp()
+            app.config["PROPRIETARY_HARDWARE_DOWN"] = (
+                datetime.datetime.now().timestamp()
+            )
     else:
         app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
     return {
         "status": 200,
         "chat_server": chat_server,
-        "embedding_server": embedding_server
+        "embedding_server": embedding_server,
     }
 
 
@@ -622,12 +623,14 @@ def create_collection():
             db.session.close()
             return redirect(url_for("get_collections"))
         else:
-            collections = db.session.query(Collection).filter(
-                Collection.user_id==user_id
-            ).all()
+            collections = (
+                db.session.query(Collection).filter(Collection.user_id == user_id).all()
+            )
             names = [collection.collection_name for collection in collections]
             if len(collections) == collection_limit:
-                flash("You already have reached the maximum collecections possibile. Delete one first.")
+                flash(
+                    "You already have reached the maximum collecections possibile. Delete one first."
+                )
                 db.session.close()
                 return redirect(url_for("get_collections"))
             if collection_name in names:
@@ -636,7 +639,7 @@ def create_collection():
             collection = Collection(
                 collection_name=request.form.get("collection-name"),
                 documents_description=request.form.get("collection-description"),
-                user_id=user_id
+                user_id=user_id,
             )
             db.session.add(collection)
             db.session.commit()
@@ -668,32 +671,31 @@ def create_source():
     except OperationalError as e:
         db.session.rollback()
         db.session.close()
-        return {
-            "status": 500,
-            "error": f"Operational error: {e} - Please retry..."
-        }
+        return {"status": 500, "error": f"Operational error: {e} - Please retry..."}
     saved, filename = save_file(request, user_id)
     description = request.form.get("description", None)
     name = request.form.get("source-name", None)
     if saved:
         try:
-            source = db.session.query(Source).filter(
-                Source.filename==filename,
-                Source.user_id==user_id
-            ).first()
+            source = (
+                db.session.query(Source)
+                .filter(Source.filename == filename, Source.user_id == user_id)
+                .first()
+            )
             aws_key = f"{user_id}/{filename}"
             keys = get_files()
             for key in keys:
                 if aws_key in key and source is not None:
                     return {
                         "status": 400,
-                        "error": "Source already present, please refresh the page."}
+                        "error": "Source already present, please refresh the page.",
+                    }
             source = Source(
                 filename=filename,
                 user_id=user_id,
                 aws_key=aws_key,
                 description=description,
-                name=name
+                name=name,
             )
             db.session.add(source)
             db.session.commit()
@@ -732,7 +734,7 @@ def add_trait_to_assistant(trait_id, assistant_id):
         if trait.trait == traits:
             return {
                 "status": 400,
-                "error": "You already have a trait with that exact name."
+                "error": "You already have a trait with that exact name.",
             }
         else:
             assistant.traits.append(trait)
@@ -746,8 +748,8 @@ def add_trait_to_assistant(trait_id, assistant_id):
     except Exception as e:
         error = f"Unknown error: {e} - Please retry"
     return {"status": 500, "error": error}
-        
-            
+
+
 @app.post("/add_source_to_collection")
 @login_required
 def add_source_to_collection():
@@ -761,17 +763,24 @@ def add_source_to_collection():
     try:
         collection = db.session.get(Collection, collection_id)
         ids = [source.id for source in collection.sources]
-        tasks = db.session.query(BackgroundIngestionTask).filter(
-            BackgroundIngestionTask.collection_id==collection_id,
-            BackgroundIngestionTask.source_id==source_id,
-            BackgroundIngestionTask.ended==False
-        ).first()
+        tasks = (
+            db.session.query(BackgroundIngestionTask)
+            .filter(
+                BackgroundIngestionTask.collection_id == collection_id,
+                BackgroundIngestionTask.source_id == source_id,
+                BackgroundIngestionTask.ended == False,
+            )
+            .first()
+        )
         if int(source_id) in ids:
             db.session.close()
             return {"stauts": 400, "error": "Source already in collection"}
         if tasks is not None:
             db.session.close()
-            return {"status": 400, "error": "Already planned the source ingestion in the collection, please wait an email will be sent to you when finished."}
+            return {
+                "status": 400,
+                "error": "Already planned the source ingestion in the collection, please wait an email will be sent to you when finished.",
+            }
         task = BackgroundIngestionTask(
             collection_id=collection_id,
             source_id=source_id,
@@ -802,18 +811,17 @@ def add_source_to_collection():
         url = f"{os.getenv('PROPRIETARY_HARDWARE_URL')}/ingest_data"
         payload = {
             "task_id": task_id,
-            "secret_key": os.getenv("PROPRIETARY_HARDWARE_SECRET_KEY")
+            "secret_key": os.getenv("PROPRIETARY_HARDWARE_SECRET_KEY"),
         }
         response = requests.post(url, json=payload)
         data = response.json()
         if response.status_code == 200:
-            return {
-                "message": f"Started job {data['message']}",
-                "status": 200
-            }
+            return {"message": f"Started job {data['message']}", "status": 200}
     else:
         if app.config["PROPRIETARY_HARDWARE_DOWN"] == 0:
-            app.config["PROPRIETARY_HARDWARE_DOWN"] = datetime.datetime.now().timestamp()
+            app.config["PROPRIETARY_HARDWARE_DOWN"] = (
+                datetime.datetime.now().timestamp()
+            )
         result = retry.delay(task.id)
         try:
             task = db.session.get(BackgroundIngestionTask, task_id)
@@ -831,7 +839,7 @@ def add_source_to_collection():
             db.session.close()
         return {
             "status": 200,
-            "message": f"Task {task.id} will be tried again in 45 seconds. Job id: {result.id}"
+            "message": f"Task {task.id} will be tried again in 45 seconds. Job id: {result.id}",
         }
 
 
@@ -845,21 +853,25 @@ def get_assistants():
     """
     assistants_limit = os.getenv("ASSISTANT_SLOTS", 5)
     traits_limit = os.getenv("TRAITS_SLOTS", 20)
-    
+
     if current_user.is_authenticated:
         try:
-            assistants = db.session.query(Assistant).filter(
-                Assistant.user_id==current_user.id
-            ).all()
+            assistants = (
+                db.session.query(Assistant)
+                .filter(Assistant.user_id == current_user.id)
+                .all()
+            )
             c_traits = [assistant.traits for assistant in assistants]
             assistants_with_traits = zip(assistants, c_traits)
-            traits = db.session.query(CharacterTrait).filter(
-                CharacterTrait.user_id==current_user.id
-            ).all()
+            traits = (
+                db.session.query(CharacterTrait)
+                .filter(CharacterTrait.user_id == current_user.id)
+                .all()
+            )
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
-            return redirect(url_for('get_assistants'))
+            return redirect(url_for("get_assistants"))
         assistants_available = int(assistants_limit) - len(assistants)
         traits_available = int(traits_limit) - len(traits)
         return render_template(
@@ -869,7 +881,7 @@ def get_assistants():
             assistants_with_traits=assistants_with_traits,
             assistants_available=assistants_available,
             traits_available=traits_available,
-            traits=traits      
+            traits=traits,
         )
     else:
         return redirect(url_for("login"))
@@ -893,8 +905,8 @@ def create_or_edit_trait():
             trait = db.session.get(CharacterTrait, trait_id)
             if trait.user_id == user_id:
                 if int(trait_id) == trait.id and trait_name.lower() == trait.trait:
-                    trait.value=trait_value,
-                    trait.reason_why=trait_reason_why
+                    trait.value = (trait_value,)
+                    trait.reason_why = trait_reason_why
                     db.session.add(trait)
                     db.session.commit()
                     flash(f"Succesfully edit trait {trait_id}")
@@ -905,11 +917,15 @@ def create_or_edit_trait():
                 return redirect(url_for("get_assistants"))
 
         else:
-            trait = db.session.query(CharacterTrait).filter(
-                CharacterTrait.user_id==user_id,
-                CharacterTrait.trait==trait_name,
-                CharacterTrait.value==trait_value
-            ).first()
+            trait = (
+                db.session.query(CharacterTrait)
+                .filter(
+                    CharacterTrait.user_id == user_id,
+                    CharacterTrait.trait == trait_name,
+                    CharacterTrait.value == trait_value,
+                )
+                .first()
+            )
             if trait is not None:
                 flash("You already have the same trait with the same value")
                 return redirect(url_for("get_assistants"))
@@ -917,7 +933,7 @@ def create_or_edit_trait():
                 trait=trait_name,
                 value=trait_value,
                 reason_why=trait_reason_why,
-                user_id=user_id
+                user_id=user_id,
             )
             db.session.add(new_trait)
             db.session.commit()
@@ -929,12 +945,12 @@ def create_or_edit_trait():
         flash(f"Operational error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for("get_assistants"))
     except OperationalError as e:
         flash(f"Pending rollback: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for("get_assistants"))
 
 
 @app.post("/traits/<trait_id>/delete")
@@ -946,29 +962,31 @@ def delete_trait(trait_id):
         db.session.commit()
         db.session.close()
         flash("Trait deleted successfully")
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for("get_assistants"))
     except OperationalError as e:
         flash(f"Operational error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for("get_assistants"))
     except Exception as e:
         flash(f"Unknown error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for("get_assistants"))
 
 
 @app.post("/sources/<source_id>/delete")
 @login_required
 def delete_source(source_id):
     try:
-        collections = db.session.query(Collection).filter(
-            Collection.user_id==current_user.id
-        ).all()
-        sources = db.session.query(Source).filter(
-            Source.user_id==current_user.id
-        ).all()
+        collections = (
+            db.session.query(Collection)
+            .filter(Collection.user_id == current_user.id)
+            .all()
+        )
+        sources = (
+            db.session.query(Source).filter(Source.user_id == current_user.id).all()
+        )
         not_deletable_sources = []
         for collection in collections:
             for source in sources:
@@ -980,20 +998,22 @@ def delete_source(source_id):
             db.session.commit()
             db.session.close()
             flash("Source deleted successfully")
-            return redirect(url_for('get_collections'))
+            return redirect(url_for("get_collections"))
         else:
-            flash("Source ingested in one or more collections, delete the collecion/s first")
+            flash(
+                "Source ingested in one or more collections, delete the collecion/s first"
+            )
             return redirect(url_for("get_collections"))
     except OperationalError as e:
         flash(f"Operational error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_collections'))
+        return redirect(url_for("get_collections"))
     except Exception as e:
         flash(f"Unknown error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_collections'))
+        return redirect(url_for("get_collections"))
 
 
 @app.post("/collections/<collection_id>/delete")
@@ -1005,17 +1025,17 @@ def delete_collection(collection_id):
         db.session.commit()
         db.session.close()
         flash("Collection deleted successfully")
-        return redirect(url_for('get_collections'))
+        return redirect(url_for("get_collections"))
     except OperationalError as e:
         flash(f"Operational error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_collections'))
+        return redirect(url_for("get_collections"))
     except Exception as e:
         flash(f"Unknown error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_collections'))
+        return redirect(url_for("get_collections"))
 
 
 @app.post("/assistants/<assistant_id>/delete")
@@ -1027,17 +1047,17 @@ def delete_assistant(assistant_id):
         db.session.commit()
         db.session.close()
         flash("Assistant deleted successfully")
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for("get_assistants"))
     except OperationalError as e:
         flash(f"Operational error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for("get_assistants"))
     except Exception as e:
         flash(f"Unknown error: {e} - Please retry...")
         db.session.rollback()
         db.session.close()
-        return redirect(url_for('get_assistants'))
+        return redirect(url_for("get_assistants"))
 
 
 @app.get("/collections/<collection_id>")
@@ -1050,25 +1070,24 @@ def get_collection(collection_id):
                 db.session.close()
                 return {
                     "status": 403,
-                    "error": "Permission denied for not owned collection"
+                    "error": "Permission denied for not owned collection",
                 }
             else:
                 collection_name = collection.collection_name
                 description = collection.documents_description
                 sources = []
                 for source in collection.sources:
-                    sources.append({
-                        "name": source.name,
-                        "description":source.description
-                    })
+                    sources.append(
+                        {"name": source.name, "description": source.description}
+                    )
                 db.session.close()
                 return {
                     "status": 200,
                     "collection_name": collection_name,
                     "description": description,
                     "collection_id": collection_id,
-                    "sources": sources
-                    }
+                    "sources": sources,
+                }
         else:
             return {"status": 404, "error": "No collection found"}
     except OperationalError as e:
@@ -1087,27 +1106,29 @@ def get_assistant(assistant_id):
                 db.session.close()
                 return {
                     "status": 403,
-                    "error": "Permission denied for not owned assistant"
+                    "error": "Permission denied for not owned assistant",
                 }
             else:
                 assistant_name = assistant.name
                 prompt = assistant.prompt
                 traits = []
                 for trait in assistant.traits:
-                    traits.append({
-                        "trait_id": trait.id,
-                        "trait_name": trait.trait,
-                        "trait_value": trait.value,
-                        "trait_reason_why": trait.reason_why
-                    })
+                    traits.append(
+                        {
+                            "trait_id": trait.id,
+                            "trait_name": trait.trait,
+                            "trait_value": trait.value,
+                            "trait_reason_why": trait.reason_why,
+                        }
+                    )
                 db.session.close()
                 return {
                     "status": 200,
                     "assistant_id": assistant_id,
                     "assistant_name": assistant_name,
                     "prompt": prompt,
-                    "traits": traits
-                    }
+                    "traits": traits,
+                }
         else:
             return {"status": 404, "error": "No collection found"}
     except OperationalError as e:
@@ -1126,38 +1147,45 @@ def profile():
     daily_tokens_limit = os.getenv("TOKENS_LIMIT", 2000)
     try:
         user_id = current_user.id
-        assistants = db.session.query(Assistant).filter(
-            Assistant.user_id==user_id
-        ).all()
+        assistants = (
+            db.session.query(Assistant).filter(Assistant.user_id == user_id).all()
+        )
         assistants_available = int(assistants_limit) - len(assistants)
-        traits = db.session.query(CharacterTrait).filter(
-            CharacterTrait.user_id==user_id
-        ).all()
+        traits = (
+            db.session.query(CharacterTrait)
+            .filter(CharacterTrait.user_id == user_id)
+            .all()
+        )
         traits_available = int(traits_limit) - len(traits)
-        collections = db.session.query(Collection).filter(
-            Collection.user_id==user_id
-        ).all()
+        collections = (
+            db.session.query(Collection).filter(Collection.user_id == user_id).all()
+        )
         c_sources = [collection.sources for collection in collections]
-        collections_with_sources = zip(collections, c_sources)    
+        collections_with_sources = zip(collections, c_sources)
         collections_available = int(collections_limit) - len(collections)
-        sources = db.session.query(Source).filter(
-            Source.user_id==user_id
-        ).all()
+        sources = db.session.query(Source).filter(Source.user_id == user_id).all()
         sources_available = int(sources_limit) - len(sources)
-        chat_histories = db.session.query(ChatHistory).filter(
-            ChatHistory.user_id==user_id
-        ).all()
-        tokens = db.session.query(DailyTokens).filter(
-            DailyTokens.user_id==user_id,
-            DailyTokens.day==datetime.datetime.now().date().isoformat()
-        ).first()
+        chat_histories = (
+            db.session.query(ChatHistory).filter(ChatHistory.user_id == user_id).all()
+        )
+        tokens = (
+            db.session.query(DailyTokens)
+            .filter(
+                DailyTokens.user_id == user_id,
+                DailyTokens.day == datetime.datetime.now().date().isoformat(),
+            )
+            .first()
+        )
         total_tokens_used = 0
         if tokens is not None:
             total_tokens_used = tokens.prompt_tokens + tokens.completion_tokens
         available_tokens = daily_tokens_limit - total_tokens_used
-        tokens = db.session.query(DailyTokens).filter(
-            DailyTokens.user_id==user_id
-        ).order_by(DailyTokens.day).all()
+        tokens = (
+            db.session.query(DailyTokens)
+            .filter(DailyTokens.user_id == user_id)
+            .order_by(DailyTokens.day)
+            .all()
+        )
         not_deletable_sources = []
         for collection in collections:
             for source in sources:
@@ -1186,7 +1214,7 @@ def profile():
         tokens=tokens,
         deletable_sources=deletable_sources,
         not_deletable_sources=not_deletable_sources,
-        user_id=user_id
+        user_id=user_id,
     )
 
 
@@ -1198,8 +1226,7 @@ def password_change():
             user = db.session.get(User, current_user.id)
             if request.form.get("password") == request.form.get("confirm-password"):
                 changed = user.change_password(
-                    request.form.get("old-password"),
-                    request.form.get("password")
+                    request.form.get("old-password"), request.form.get("password")
                 )
                 if changed:
                     db.session.add(user)
@@ -1234,11 +1261,8 @@ def get_tokens(daily_tokens_id):
             prompt_tokens = daily_token_usage.prompt_tokens
             db.session.close()
             return {
-                "status":200,
-                "message": {
-                    "prompt_tokens": prompt_tokens,
-                    "comp_tokens": comp_tokens
-                    }
+                "status": 200,
+                "message": {"prompt_tokens": prompt_tokens, "comp_tokens": comp_tokens},
             }
         return {"status": 404, "error": "Record not found"}
     except OperationalError as e:
@@ -1277,9 +1301,7 @@ def save_chat_history():
             if chat_history_name is None:
                 chat_history_name = "Saved chat"
             chat_history = ChatHistory(
-                user_id=user_id,
-                name=chat_history_name,
-                messages=json_chat_history
+                user_id=user_id, name=chat_history_name, messages=json_chat_history
             )
             db.session.add(chat_history)
             db.session.commit()
@@ -1305,9 +1327,11 @@ def save_chat_history():
 @login_required
 def get_chat_histories():
     try:
-        user_chat_histories = db.session.query(ChatHistory).filter(
-            ChatHistory.user_id==current_user.id
-        ).all()
+        user_chat_histories = (
+            db.session.query(ChatHistory)
+            .filter(ChatHistory.user_id == current_user.id)
+            .all()
+        )
         json_chat_histories = [
             chat_history.messages for chat_history in user_chat_histories
         ]
@@ -1318,8 +1342,7 @@ def get_chat_histories():
         db.session.close()
         histories_trimmed_info = zip(user_chat_histories, trimmed_histories)
         return render_template(
-            "chat_histories.html",
-            chat_histories=histories_trimmed_info
+            "chat_histories.html", chat_histories=histories_trimmed_info
         )
     except OperationalError:
         flash("Operational error: Please retry")
@@ -1336,9 +1359,7 @@ def get_chat_history(chat_history_id):
         chat_history = db.session.get(ChatHistory, chat_history_id)
         messages = chat_history.messages
         return render_template(
-            "chat_history.html",
-            chat_history=chat_history,
-            messages=messages
+            "chat_history.html", chat_history=chat_history, messages=messages
         )
     except OperationalError:
         flash("Operational error: Please retry")

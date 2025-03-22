@@ -1,7 +1,12 @@
 import datetime
 from proprietary_hardware import app, db
 from proprietary_hardware.models import Collection, Source
-from proprietary_hardware.storage import upload_directory, get_files, upload_file_no_overwrite, download_file
+from proprietary_hardware.storage import (
+    upload_directory,
+    get_files,
+    upload_file_no_overwrite,
+    download_file,
+)
 from proprietary_hardware.utils import init_embedding_model, update_collection_and_task
 from proprietary_hardware.storage import BASE_PREFIX, LOCAL_PREFIX
 from botocore.exceptions import ClientError
@@ -17,7 +22,6 @@ from langchain_ollama import ChatOllama
 from sqlalchemy.exc import OperationalError, PendingRollbackError
 
 
-
 def get_client(user_id):
     """Method that get the chroma_db for the given user_id
 
@@ -27,9 +31,7 @@ def get_client(user_id):
     Returns:
         chromadb.PersistentClient: a ChromaDb client instance for the given user
     """
-    return chromadb.PersistentClient(
-        path=f"{LOCAL_PREFIX}/{user_id}/chroma_db"
-        )
+    return chromadb.PersistentClient(path=f"{LOCAL_PREFIX}/{user_id}/chroma_db")
 
 
 def download_client(user_id):
@@ -108,7 +110,7 @@ def ingest(collection_id, source_id, user_id):
     raw_pdf_elements = partition_pdf(
         filename=filename,
         extract_images_in_pdf=True,
-        extract_image_block_types=['Table', 'Image'],
+        extract_image_block_types=["Table", "Image"],
         extract_image_block_to_payload=True,
         infer_table_structure=True,
         max_characters=512,
@@ -123,10 +125,10 @@ def ingest(collection_id, source_id, user_id):
         del metadata["coordinates"]
         metadata["source"] = metadata["filename"]
         del metadata["filename"]
-        page_number = metadata['page_number']
+        page_number = metadata["page_number"]
         id = f"{counter}-{file_name}"
-        if el.category == 'Image':
-            image_bytes = metadata['image_base64']
+        if el.category == "Image":
+            image_bytes = metadata["image_base64"]
             image_name = f"{source_id}-{page_number}-{image_counter}.jpg"
             aws_path = f"{user_id}/{source_id}/images"
             local_path = f"{LOCAL_PREFIX}/{aws_path}"
@@ -134,13 +136,13 @@ def ingest(collection_id, source_id, user_id):
             if not os.path.exists(local_path):
                 os.makedirs(local_path)
             local_key = f"{local_path}/{image_name}"
-            with open(local_key, 'w') as f:
+            with open(local_key, "w") as f:
                 f.write(image_bytes)
-            del metadata['image_base64']
+            del metadata["image_base64"]
             image_counter += 1
             upload_file_no_overwrite(key)
-        elif el.category == 'Table':
-            image_bytes = metadata['image_base64']
+        elif el.category == "Table":
+            image_bytes = metadata["image_base64"]
             table_name = f"{source_id}-{page_number}-{image_counter}.jpg"
             aws_path = f"{user_id}/{source_id}/tables"
             local_path = f"{LOCAL_PREFIX}/{aws_path}"
@@ -148,9 +150,9 @@ def ingest(collection_id, source_id, user_id):
             if not os.path.exists(local_path):
                 os.makedirs(local_path)
             local_key = f"{local_path}/{table_name}"
-            with open(local_key, 'w') as f:
+            with open(local_key, "w") as f:
                 f.write(image_bytes)
-            del metadata['image_base64']
+            del metadata["image_base64"]
             table_counter += 1
             upload_file_no_overwrite(key)
             text = el.text
@@ -158,13 +160,13 @@ def ingest(collection_id, source_id, user_id):
             text = el.text
         documents.append(Document(page_content=text, metadata=metadata))
         ids.append(id)
-        
+
     client, error = download_client(user_id)
-    
+
     vector_store = Chroma(
         collection_name=collection.collection_name,
         embedding_function=init_embedding_model(),
-        client=client
+        client=client,
     )
 
     counter = 0
@@ -172,12 +174,10 @@ def ingest(collection_id, source_id, user_id):
         counter += 1
         docs = documents[:500]
         _ids = ids[:500]
-        vector_store.add_documents(
-            documents=docs,
-            ids=_ids)
+        vector_store.add_documents(documents=docs, ids=_ids)
         documents = documents[500:]
         ids = ids[500:]
-    
+
     vector_store.add_documents(
         documents=documents,
         ids=ids,
@@ -186,7 +186,7 @@ def ingest(collection_id, source_id, user_id):
     assert update_collection_and_task(collection_id, source_id, timestamp)
     assert upload_directory(f"{user_id}/chroma_db")
     return True
-    
+
 
 def query_with_retriever(question, collection, user_id):
     """Method to query a vectore with a retriever
@@ -201,9 +201,9 @@ def query_with_retriever(question, collection, user_id):
     """
     client, error = download_client(user_id)
     vector_store = Chroma(
-    client=client,
-    embedding_function=init_embedding_model(),
-    collection_name=collection
+        client=client,
+        embedding_function=init_embedding_model(),
+        collection_name=collection,
     )
     retriever = vector_store.as_retriever(
         search_type="similarity_score_threshold",
@@ -212,7 +212,7 @@ def query_with_retriever(question, collection, user_id):
             "score_threshold": 0.5,
         },
     )
-    
+
     template = """You are an amazing multilingual assistant.
     You MUST answer in the language used by the user.
     Answer the question based ONLY on the following context:
@@ -222,12 +222,9 @@ def query_with_retriever(question, collection, user_id):
     Question: {question}
     
     Answer:"""
-    
+
     prompt = ChatPromptTemplate.from_template(template)
-    model = ChatOllama(
-        model=os.getenv("MISTRAL_MODEL"),
-        temperature=0
-    )
+    model = ChatOllama(model=os.getenv("MISTRAL_MODEL"), temperature=0)
 
     def format_docs(docs):
         return "\n\n".join([d.page_content for d in docs])

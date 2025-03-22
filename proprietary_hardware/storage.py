@@ -6,9 +6,10 @@ from botocore.exceptions import NoCredentialsError
 
 from proprietary_hardware import ALLOWED_EXTENSIONS
 
-AWS_BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
+AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
 BASE_PREFIX = "the_custom_assistant_data"
 LOCAL_PREFIX = "tmp"
+
 
 def get_client():
     """Method to get aws s3 client
@@ -18,8 +19,8 @@ def get_client():
     """
     return boto3.client(
         "s3",
-        aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-        aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     )
 
 
@@ -38,7 +39,7 @@ def get_files(path=None):
     else:
         path = BASE_PREFIX
     response = s3.list_objects_v2(Bucket=AWS_BUCKET_NAME, Prefix=path)
-    keys = [obj['Key'] for obj in response.get('Contents')]
+    keys = [obj["Key"] for obj in response.get("Contents")]
     return keys
 
 
@@ -75,7 +76,7 @@ def upload_file(key):
         boole: success or not
     """
     s3 = get_client()
-    local_key = f'{LOCAL_PREFIX}/{key}'
+    local_key = f"{LOCAL_PREFIX}/{key}"
     try:
         s3.upload_file(local_key, AWS_BUCKET_NAME, f"{BASE_PREFIX}/{key}")
     except Exception as e:
@@ -83,13 +84,13 @@ def upload_file(key):
     return True
 
 
-def upload_file_no_overwrite(key): 
+def upload_file_no_overwrite(key):
     """Method to upload a file without overwriting
 
     Args:
         key (str): the path of the file
     """
-    aws_key = f'{BASE_PREFIX}/{key}'
+    aws_key = f"{BASE_PREFIX}/{key}"
     keys = get_files()
     if aws_key not in keys and aws_key.split(".")[1] in ALLOWED_EXTENSIONS:
         upload_file(key)
@@ -112,7 +113,7 @@ def upload_directory(user_db_tmp_path):
                 file_path = os.path.join(root, file)
                 key = file_path.replace(f"{LOCAL_PREFIX}/", "")
                 upload_file(key)
-                
+
     except FileNotFoundError:
         return False
     except NoCredentialsError:
