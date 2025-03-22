@@ -95,7 +95,7 @@ def upload_file_no_overwrite(key):
     """
     aws_key = f'{BASE_PREFIX}/{key}'
     keys = get_files()
-    if aws_key not in keys and aws_key.split(".")[1] not in ALLOWED_EXTENSIONS:
+    if aws_key not in keys and aws_key.split(".")[1] in ALLOWED_EXTENSIONS:
         upload_file(key)
     else:
         print(f"{key} already exist, aborted.")
