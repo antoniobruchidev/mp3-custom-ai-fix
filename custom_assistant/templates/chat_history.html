@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Chat history - {{ chat_history.name }}{% endblock %}
+{% block content %}
+<div class="container">
+<h1 class="text-center mt-5">
+    {{ chat_history.name|upper }}
+</h1>
+
+<div class="chat-container mt-4">
+    <div class="card">
+        <div class="card-header">
+            History - Tokens usage: <p class="d-inline-block">Prompt: <span id="prompt-tokens">0</span> - Completion: <span id="completion-tokens">0</span></p>
+        </div>
+        <div class="card-body">
+            <div class="card h-100">
+                <div class="card-header">
+                    {{ chat_history.name }}
+                </div>
+                <div class="card-body" id="answer-container">
+                    {% for message in chat_history.messages %}
+                        {% if message["role"] == "human" %}
+                            <div class="alert alert-primary w-75 float-end text-end" role="alert">
+                                {{ message["content"] }}<div class="human-icon ms-4 d-inline-block"></div>
+                            </div>
+                        {% elif message["role"] == "assistant" %}
+                            <div class="alert alert-primary w-75 float-start" role="alert">
+                                <div class="ai-icon me-2 d-inline-block"></div>{{ message["content"] }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="mt-2">
+                <label for="message" class="form-label">Message:</label>
+                <textarea class="form-control" id="message" rows="3"></textarea>
+            </div>
+        
+            <div class="btn-group mt-3 w-100" role="group" aria-label="Add assistants">
+                <button id="send-message" class="btn btn-send-message" type="button">
+                    Send message
+                </button>
+                <button id="save-history" class="btn btn-save-history rounded-end" type="button" data-url="{{ url_for('save_chat_history')}}">
+                    Save History
+                </button>
+                <input id="chat-history-name" class="form-control ms-4 w-50" type="text" placeholder="Give your chat history a name" aria-label="Chat history name">
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block postloadjs %}
+<script src="{{ url_for('static', filename="js/assistants.js")}}"></script>
+{% endblock %}

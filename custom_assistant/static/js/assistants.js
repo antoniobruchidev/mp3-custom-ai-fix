@@ -262,6 +262,8 @@ clear.addEventListener("click", resetAssistantFields)
 assistantSelector.addEventListener("change", function(e) {
     const assistantId = $(e.target).val()
     const url = `${$(e.target).attr("data-url")}${assistantId}`
+    const traitsContainer = document.getElementById("traits-container")
+    traitsContainer.innerHTML = ""
     getAssistant(url)
 })
 
@@ -406,30 +408,36 @@ const handleChatResponse = (data) => {
  * Method to call the chatbot
  */
 const chat = async () => {
-    const url = window.location.pathname.replace("/assistants", "/chat")
-    if (chatHistory.length == 0){
-        const formData = initializeAssistantChatHistory()
-        const response = await fetch(url, {
-            method: "POST",
-            body: formData
-        })
-        const data = await response.json()
-        handleChatResponse(data)
+    const message = document.getElementById("message")
+    const basePrompt = document.getElementById("assistant-base-prompt")
+    if (message.value == "" || basePrompt.value == ""){
+        createToast("Assistant base prompt and user message cannot be blank")
     } else {
-        const message = document.getElementById("message")
-        chatHistory.push({"role": "human", "content": message.value})
-        showMessage(message.value, true)
-        const headers = {"Content-Type": "application/json"}
-        const response = await fetch(url, {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify({"chat_history": chatHistory})
-        })
-        const data = await response.json()
-        handleChatResponse(data)
+        const url = window.location.pathname.replace("/assistants", "/chat")
+        if (chatHistory.length == 0){
+            const formData = initializeAssistantChatHistory()
+            const response = await fetch(url, {
+                method: "POST",
+                body: formData
+            })
+            const data = await response.json()
+            handleChatResponse(data)
+        } else {
+            const message = document.getElementById("message")
+            chatHistory.push({"role": "human", "content": message.value})
+            showMessage(message.value, true)
+            const headers = {"Content-Type": "application/json"}
+            const response = await fetch(url, {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify({"chat_history": chatHistory})
+            })
+            const data = await response.json()
+            handleChatResponse(data)
+        }
+        sendButton.removeAttribute("disabled")
+        sendButton.innerHTML = "Send Message"
     }
-    sendButton.removeAttribute("disabled")
-    sendButton.innerHTML = "Send Message"
 }
 
 for (let addTraitButton of addTraitButtons) {
@@ -442,6 +450,40 @@ for (let addTraitButton of addTraitButtons) {
 sendButton.addEventListener("click", event => {
     createSpinner(event.target)
     chat()
+    const message = document.getElementById("message")
+    message.value = ""
+})
+
+const saveHistoryButton = document.getElementById("save-history")
+
+const saveHistory = async (url) => {
+    const name = document.getElementById("chat-history-name")
+    const payload = {"chat_history": chatHistory, "chat_history_name": name.value}
+    const headers = {"Content-Type": "application/json"}
+    const response = await fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload)
+    })
+    const data = await response.json()
+    if (data.status == 200) {
+        createToast(data.message)
+        assistantSelector.value = "Select your assistant"
+        basePrompt.value = ""
+        assistantName.value = ""
+        const answerContainer = document.getElementById("answer-container")
+        const message = document.getElementById("message")
+        message.value = ""
+        answerContainer.innerHTML = ""
+    } else {
+        createToast(data.error)
+    }
+}
+
+saveHistoryButton.addEventListener("click", event => {
+    const button = event.target
+    const url = button.getAttribute("data-url")
+    saveHistory(url)
 })
 
 

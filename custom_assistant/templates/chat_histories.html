@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="container">
+<h1 class="text-center mt-5">
+    Profile Page
+</h1>
+
+<div class="row row-cols-1 row-cols-md-2 g-4 mt-5">
+    {% for chat_history, trimmed_messages in chat_histories %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    {{ chat_history.name }} - Last 2 messages
+                </div>
+                <div class="card-body">
+                    {% for message in trimmed_messages %}
+                        {% if message["role"] == "human" %}
+                            <div class="alert alert-primary w-75 float-end text-end" role="alert">
+                                {{ message["content"] }}<div class="human-icon ms-4 d-inline-block"></div>
+                            </div>
+                        {% elif message["role"] == "assistant" %}
+                            <div class="alert alert-primary w-75 float-start" role="alert">
+                                <div class="ai-icon me-2 d-inline-block"></div>{{ message["content"] }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    <div class="btn-group my-2">
+                        <a href="{{ url_for('get_chat_history', chat_history_id=chat_history.id) }}" class="btn btn-profile">
+                        Go to <i class="fa-solid fa-angles-right"></i>
+                        </a>
+                        <button class="btn btn-profile-discard" data-bs-name="{{ chat_history.name }}" data-bs-url="{{ url_for('delete_chat_history', chat_history_id=chat_history.id) }}" data-bs-toggle="modal" data-bs-target="#delete-modal">Delete Chat History</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="modal" id="delete-modal" tabindex="-1">
+    <div class="modal-dialog w-75 mx-auto">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Delete confirmation</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to permanently delete Chat history: <span id="name"></span></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-trait" data-bs-dismiss="modal" id="modal-close">Close</button>
+            <button type="button" class="btn btn-discard" id="delete-confirmation">Permanently delete</button>
+        </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block postloadjs %}
+<script src="{{ url_for('static', filename='js/chat_histories.js')}}"></script>
+{% endblock %}
