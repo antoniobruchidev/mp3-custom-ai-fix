@@ -43,9 +43,7 @@ def chat(
         message (_type_): _description_
     """
     response = None
-    print(prompt, message, traits, question, collection_id, chat_history)
     if question is not None and collection_id is not None:
-        print("HERE")
         payload = {
             "question": question,
             "collection_id": collection_id
@@ -53,9 +51,7 @@ def chat(
         retriever_url = f"{url.split('11434')[0]}5001/query"
         response = requests.request("POST", retriever_url, json=payload)
         data = response.json()
-        print(data)
         if data['status'] == 200:
-            print(True)
             return {"status": 200, "message": data["message"]}
         else:
             return {"status": 400, "error": data["error"]}
@@ -65,7 +61,6 @@ def chat(
         response = requests.request("POST", ollama_url, json=payload)
         if response.status_code == 200:
             data = response.json()
-            print(data)
             return data['message'], data['prompt_tokens'], data['comp_tokens']
     if prompt is not None and traits != "":
         messages = [

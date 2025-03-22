@@ -24,7 +24,6 @@ def get_proprietary_hardware_status() -> bool:
     url = os.getenv("OPENAI_COMPATIBLE_SERVER")
     try:
         response = requests.request("GET", url.split("/v1")[0])
-        print(response.text)
         if response.text == "Ollama is running":
             status = True
         else:
@@ -55,7 +54,6 @@ def get_embedding_model(use_gpu):
     Returns:
         SentencTransformersEmbeddingFunction: initialized function for gpu or cpu
     """
-    print(f"RETURNING EMBEDDING MODEL - USE GPU {use_gpu}")
     if use_gpu and bool(int(os.getenv("USE_PROPRIETARY_HARDWARE"))):
         return SentenceTransformersEmbeddingFunction(SentenceTransformer(
             model_name_or_path="intfloat/multilingual-e5-large",
@@ -80,10 +78,8 @@ def is_gpu_embedding_model_available():
                 mp.set_start_method("spawn")
             except:
                 pass
-            print("CUDA AVAILABLE")
             return True
         else:
-            print("CUDA UNAVAILABLE")
             return False
 
 
@@ -94,7 +90,6 @@ def init_embedding_model():
         _type_: _description_
     """
     use_gpu = is_gpu_embedding_model_available()
-    print(f"use of gpu for embeddings: {use_gpu}")
     return get_embedding_model(use_gpu)
 
 
@@ -196,7 +191,6 @@ def ended_ingestion_email(user_id, collection_id, source_id):
             mail.send(msg)
             return hash
         except OperationalError as e:
-            print(f"Operational error: {e} - Retrying")
             try:
                 user = db.session.get(User, user_id)
                 collection = db.session.get(Collection, collection_id)
@@ -216,8 +210,8 @@ def ended_ingestion_email(user_id, collection_id, source_id):
             except OperationalError:
                 db.session.close()
         except Exception as e:
-            print("Unknown error: {e}")
             db.session.close()
+
 
 def history_chat(chat_history):
     llm = ChatOllama(
@@ -235,8 +229,6 @@ def history_chat(chat_history):
             messages.append(AIMessage(content=message['content']))
     
     answer = llm.invoke(messages)
-    print(answer.response_metadata)
-    print(type(answer))
     return {
         "answer": answer.content,
         "prompt_tokens": answer.usage_metadata['input_tokens'],

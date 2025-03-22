@@ -50,23 +50,19 @@ def download_client(user_id):
             keys = get_files(f"{user_id}/chroma_db")
             for key in keys:
                 aws_key = key.replace(f"{BASE_PREFIX}/", "")
-                x = download_file(aws_key)
-                print(x)
-            print(f"Downloaded vectorstore for user id: {user_id}")
+                download_file(aws_key)
         except TypeError:
-            print(f"No existing vectorstore for user id: {user_id}")
+            pass
         except ClientError as e:
             error = f"Error Downloading files from AWS S3 Bucket - {e} - Retrying"
             try:
                 aws_key = key.replace(f"{BASE_PREFIX}/", "")
-                x = download_file(aws_key)
-                print(x)
+                download_file(aws_key)
             except Exception as e:
                 error = f"Error Downloading files from AWS S3 Bucket - {e} - Retrying"
                 try:
                     aws_key = key.replace(f"{BASE_PREFIX}/", "")
-                    x = download_file(aws_key)
-                    print(x)
+                    download_file(aws_key)
                 except Exception as e:
                     error = f"Error Downloading files from AWS S3 Bucket - {e} - Stop"
     return get_client(user_id), error
@@ -88,35 +84,27 @@ def ingest(collection_id, source_id, user_id):
             collection = db.session.get(Collection, int(collection_id))
             source = db.session.get(Source, int(source_id))
             response = download_file(source.aws_key)
-            print(f"{datetime.datetime.now().isoformat()} - response: {response}")
             filename = f"{LOCAL_PREFIX}/{collection.user_id}/{source.filename}"
             file_name = source.filename
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
-            print(f"{datetime.datetime.now().isoformat()} - Operational error: {e}")
-            print(f"{datetime.datetime.now().isoformat()} - Retrying")
             collection = db.session.get(Collection, int(collection_id))
             source = db.session.get(Source, int(source_id))
             response = download_file(source.aws_key)
-            print(f"{datetime.datetime.now().isoformat()} - response: {response}")
             filename = f"{LOCAL_PREFIX}/{collection.user_id}/{source.filename}"
             file_name = source.filename
         except PendingRollbackError as e:
             db.session.rollback()
-            print(f"{datetime.datetime.now().isoformat()} - Operational error: {e}")
-            print(f"{datetime.datetime.now().isoformat()} - Retrying")
             collection = db.session.get(Collection, int(collection_id))
             source = db.session.get(Source, int(source_id))
             response = download_file(source.aws_key)
-            print(f"{datetime.datetime.now().isoformat()} - response: {response}")
             filename = f"{LOCAL_PREFIX}/{collection.user_id}/{source.filename}"
             file_name = source.filename
         db.session.close()
     docs = []
     documents = []
     ids = []
-    print("Start PDF extraction")
     raw_pdf_elements = partition_pdf(
         filename=filename,
         extract_images_in_pdf=True,
@@ -127,7 +115,6 @@ def ingest(collection_id, source_id, user_id):
         new_after_n_chars=384,
         combine_text_under_n_chars=256,
     )
-    print("PDF extraction complete")
     image_counter = 0
     table_counter = 0
     for counter, el in enumerate(raw_pdf_elements):
@@ -163,7 +150,6 @@ def ingest(collection_id, source_id, user_id):
             local_key = f"{local_path}/{table_name}"
             with open(local_key, 'w') as f:
                 f.write(image_bytes)
-                print(f.name)
             del metadata['image_base64']
             table_counter += 1
             upload_file_no_overwrite(key)
@@ -180,7 +166,6 @@ def ingest(collection_id, source_id, user_id):
         embedding_function=init_embedding_model(),
         client=client
     )
-    print(f"{datetime.datetime.now().isoformat()} - Start ingesting chunks into {vector_store._collection_name}")
 
     counter = 0
     while len(documents) > 500:
@@ -192,17 +177,14 @@ def ingest(collection_id, source_id, user_id):
             ids=_ids)
         documents = documents[500:]
         ids = ids[500:]
-        print(f"{datetime.datetime.now().isoformat()} - Ingested batch {counter}")
     
     vector_store.add_documents(
         documents=documents,
         ids=ids,
     )
-    print(f"{datetime.datetime.now().isoformat()} - Ingested final batch")
     timestamp = datetime.datetime.now().timestamp()
     assert update_collection_and_task(collection_id, source_id, timestamp)
     assert upload_directory(f"{user_id}/chroma_db")
-    print(f"{datetime.datetime.now().isoformat()} - Collection and User Updated.")
     return True
     
 

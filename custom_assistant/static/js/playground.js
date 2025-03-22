@@ -44,7 +44,6 @@ const setTrait = () => {
     for (let existingTrait of existingTraits) {
         if (!existingTrait.innerText.includes("Your existing traits -")){
             var traitTitle = existingTrait.innerText
-            console.log(traitTitle)
             var cleanedTrait = traitTitle.split(":")[0]
             var cleanedValue = traitTitle.split(":")[1].trim("\n").replace(" ", "")
             var title = `${cleanedTrait.toUpperCase()}: ${cleanedValue}`
@@ -56,7 +55,6 @@ const setTrait = () => {
                 }
             }
             if (title == traitTitle) {
-                console.log(title, traitTitle)
                 createToast("You cannot have 2 traits with the same name and the same value")
                 break
             } else if (spaces != null && spaces > 1) {
@@ -102,7 +100,6 @@ const clearTraits = () => {
  */
 const saveTraits = () => {
     popoverList = updatePopovers()
-    console.log(popoverList)
     let traits = []
     for (let popover of popoverList) {
         let title = $(popover._element).attr("data-bs-title")
@@ -158,7 +155,6 @@ const chat = async () => {
     const traits = document.getElementsByClassName("btn-trait")
     if (traits.length > 0) {
         for (let i=0; i < traits.length; i++) {
-            console.log(traits[i])
             let title = traits[i].getAttribute("data-bs-title")
             let reasonWhy = traits[i].getAttribute("data-bs-content")
             traitsPrompt += `${title} \n${reasonWhy}\n\n`
@@ -174,7 +170,6 @@ const chat = async () => {
         body: formData
     })
     const data = await response.json()
-    console.log(data)
     if (data.status == 200) {
         showAnswer(data.answer)
         const promptTokens = document.getElementById("prompt-tokens")
@@ -251,11 +246,9 @@ setTraitButton.addEventListener("click", setTrait)
 
 // add event listener to each saved trait present the modal
 for (let trait of traits) {
-    console.log(trait)
     trait.addEventListener("dblclick", function (e) {
         finalizeModalClose(trait)
     })
-    console.log(`added event listener for ${trait}`)
 }
 
 // add event listener to invoke the chatbot with the active settings

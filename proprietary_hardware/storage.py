@@ -58,8 +58,6 @@ def download_file(key):
     if not os.path.exists(local_path):
         os.makedirs(local_path)
     aws_key = f"{BASE_PREFIX}/{key}"
-    print(f"aws key {aws_key}")
-    print(f"local key {local_key}")
     try:
         assert s3.download_file(Bucket=AWS_BUCKET_NAME, Key=aws_key, Filename=local_key)
     except Exception as e:
@@ -80,9 +78,7 @@ def upload_file(key):
     local_key = f'{LOCAL_PREFIX}/{key}'
     try:
         s3.upload_file(local_key, AWS_BUCKET_NAME, f"{BASE_PREFIX}/{key}")
-        print(f"File {key} uploaded to S3 successfully.")
     except Exception as e:
-        print(f"{datetime.datetime.now().isoformat()} - Unknown error: {e}")
         return False
     return True
 
@@ -97,8 +93,6 @@ def upload_file_no_overwrite(key):
     keys = get_files()
     if aws_key not in keys and aws_key.split(".")[1] in ALLOWED_EXTENSIONS:
         upload_file(key)
-    else:
-        print(f"{key} already exist, aborted.")
 
 
 def upload_directory(user_db_tmp_path):
@@ -120,10 +114,8 @@ def upload_directory(user_db_tmp_path):
                 upload_file(key)
                 
     except FileNotFoundError:
-        print("The directory was not found")
         return False
     except NoCredentialsError:
-        print("Credentials not available")
         return False
 
     return True

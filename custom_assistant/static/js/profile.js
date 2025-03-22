@@ -7,7 +7,6 @@ const tokensUsageSelector = document.getElementById("tokens-select")
 const getTokens = async (url) => {
     const response = await fetch(url)
     const data = await response.json()
-    console.log(data)
     if (data.status == 200 && data.message != "do nothing") {
         showUsage(data.message)
     } else if (data.status == 200 && data.message == "do nothing") {
@@ -22,7 +21,6 @@ const getTokens = async (url) => {
  * @param {*} traits 
  */
 const showUsage = (usage) => {
-    console.log(usage)
     const promptTokens = document.getElementById("staticPromptTokensUsage")
     const compTokens = document.getElementById("staticCompTokensUsage")
     promptTokens.value = usage.prompt_tokens
@@ -49,7 +47,6 @@ deleteConfirmationButton.addEventListener("click", event => {
 })
 deleteConfirmation.addEventListener("keyup", event => {
     const input = event.target
-    console.log(input.value)
     if (input.value == "Delete my account") {
         deleteConfirmationButton.removeAttribute("disabled")
     } else {

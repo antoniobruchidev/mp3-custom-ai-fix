@@ -122,7 +122,6 @@ const showAnswer = (answer) => {
 const chat = async () => {
     const question = document.getElementById("question")
     const collection = document.getElementById("collection-select")
-    console.log(collection.value)
     const url = window.location.pathname.replace("/collections", "/chat")
     const formData = new FormData()
     formData.append("collection-id", collection.value)
@@ -168,7 +167,6 @@ const setActiveCollection = (data) => {
 const getCollection = async (url) => {
     const response = await fetch(url)
     const data = await response.json()
-    console.log(data)
     if (data.status == 200) {
         clear.classList.add("hidden")
         editCollectionButton.classList.remove("hidden")
@@ -202,7 +200,6 @@ clear.addEventListener("click", resetCollectionFields)
 collectionSelector.addEventListener("change", function(e) {
     const collectionId = $(e.target).val()
     const url = `${$(e.target).attr("data-url")}${collectionId}`
-    console.log(url)
     getCollection(url)
 })
 

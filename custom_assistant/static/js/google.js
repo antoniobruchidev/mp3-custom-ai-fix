@@ -34,10 +34,10 @@ const loginOrRegister = async (googleId, email) => {
         if (data.status == 200) {
             window.location.href = url.replace("/login", "/");
         } else {
-            console.log(data.message, data.status)
+            createToast(data.error)
         }
       } catch (e) {
-            console.error(e);
+            createToast(e)
       }
 }
 

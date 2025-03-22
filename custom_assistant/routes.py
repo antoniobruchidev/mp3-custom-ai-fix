@@ -173,7 +173,6 @@ def playground():
             assistants
         )
         traits_available = int(os.getenv("TRAIT_SLOTS", 20)) - len(traits)
-        print(assistants_available, traits_available)
         return render_template(
             "playground.html",
             user=current_user,
@@ -187,7 +186,6 @@ def playground():
     except OperationalError as e:
         db.session.rollback()
         db.session.close()
-        print(e)
         return redirect(playground)
         
 
@@ -205,7 +203,6 @@ def create_or_edit_assistant():
     data = request.get_json()
     trait_limit = int(os.getenv("TRAIT_SLOTS", 20))
     assistant_limit = int(os.getenv("ASSISTANT_SLOTS", 5))
-    print(data)
     try:
         if data['edit']:
             assistant = db.session.get(Assistant, data['assistant_id'])
@@ -236,7 +233,6 @@ def create_or_edit_assistant():
     trait_names = [f"{trait.trait}: {trait.value}" for trait in user_traits]
     traits_to_be_saved = []
     for trait in data['traits']:
-        print(trait)
         trait_value = trait['value'].replace("\n", "").replace(" ", "")
         t = f"{trait['trait']}: {trait_value}"
         traits_to_be_saved.append(t)
@@ -247,10 +243,8 @@ def create_or_edit_assistant():
     if data['assistant_name'] in assistant_names:
         return {"status": 400, "error": "You already have an assistant with that name"}
     if assistant_limit == len(user_assistants):
-        print(assistant_limit, user_assistants)
         return {"status": 400, "error": "Not enough assistant slots available"}
     if trait_limit == len(user_traits) + len(data['traits']):
-        print(trait_limit, user_traits)
         return {"status": 400, "error": "Not enough trait slots available"}
     try:
         assistant = Assistant(
@@ -265,7 +259,6 @@ def create_or_edit_assistant():
             trait_value = trait['value'].replace("\n", "").replace(" ", "")
             t = f"{trait['trait']}: {trait_value}"
             if t in traits_to_be_saved:
-                print(user.id, trait['trait'], trait_value)
                 character_trait = CharacterTrait(
                     user_id=user.id,
                     trait=trait['trait'],
@@ -614,7 +607,6 @@ def create_collection():
     collection_id = request.form.get("collection-id")
     description = request.form.get("collection-description", None)
     collection_limit = os.getenv("COLLECTION_SLOTS", 3)
-    print(collection_id, collection_name)
     if description is None or description == "":
         flash("error")
         return redirect(url_for("collections"))
@@ -708,7 +700,6 @@ def create_source():
             source_id = source.id
             db.session.close()
             assert upload_file(aws_key)
-            print("uploaded to aws")
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
@@ -792,7 +783,6 @@ def add_source_to_collection():
     except OperationalError as e:
         db.session.rollback()
         db.session.close()
-        print(f"Operational error: {e} - Retrying")
         try:
             task = BackgroundIngestionTask(
                 collection_id=collection_id,
@@ -805,7 +795,6 @@ def add_source_to_collection():
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
-            print(f"Operational error: {e} - Stop")
             return {"status": 500, "error": e}
     chat_server, embedding_server = get_proprietary_hardware_status()
     if embedding_server:
@@ -864,7 +853,6 @@ def get_assistants():
             ).all()
             c_traits = [assistant.traits for assistant in assistants]
             assistants_with_traits = zip(assistants, c_traits)
-            print(c_traits)
             traits = db.session.query(CharacterTrait).filter(
                 CharacterTrait.user_id==current_user.id
             ).all()
@@ -1055,10 +1043,8 @@ def delete_assistant(assistant_id):
 @app.get("/collections/<collection_id>")
 @login_required
 def get_collection(collection_id):
-    print(collection_id)
     try:
         collection = db.session.get(Collection, int(collection_id))
-        print(collection)
         if collection:
             if collection.user_id != current_user.id:
                 db.session.close()
@@ -1096,7 +1082,6 @@ def get_collection(collection_id):
 def get_assistant(assistant_id):
     try:
         assistant = db.session.get(Assistant, int(assistant_id))
-        print(assistant)
         if assistant:
             if assistant.user_id != current_user.id:
                 db.session.close()

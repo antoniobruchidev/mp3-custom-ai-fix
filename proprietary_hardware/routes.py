@@ -81,7 +81,6 @@ def ingest():
     Returns:
         dict: status and message/error
     """
-    print(request.json)
     if request.json.get("secret_key") == os.getenv("APP_SECRET_KEY"):
         task_id = request.json.get("task_id")
         try:
@@ -96,7 +95,6 @@ def ingest():
             db.session.add(task)
             db.session.commit()
         except OperationalError as e:
-            print(f"Operational error: {e} - Retrying...")
             try:
                 task = db.session.get(BackgroundIngestionTask, task_id)
                 collection = db.session.get(Collection, task.collection_id)
@@ -133,7 +131,6 @@ def query():
             Collection, request.json.get("collection_id")
         )
     except OperationalError as e:
-        print(f"Operational error: {e} - Retrying")
         try:
             collection = db.session.get(
                 Collection, request.json.get("collection_id")

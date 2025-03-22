@@ -44,7 +44,6 @@ const saveTrait = async (element) => {
         body: formData
     })
     const data = await response.json()
-    console.log(data)
     if (data.status == 200) {
         window.location.reload()
     } else {
@@ -163,7 +162,6 @@ const setActiveAssistant = (data) => {
 const getAssistant = async (url) => {
     const response = await fetch(url)
     const data = await response.json()
-    console.log(data)
     if (data.status == 200) {
         clear.classList.add("hidden")
         editAssistantButton.removeAttribute("disabled")
@@ -240,7 +238,6 @@ const saveOrEditAssistant = async () => {
  * @returns {string} the card to be shown as innerHtml
  */
 const showMessage = (message, user) => {
-    console.log(user, true, user == true)
     const alert = document.createElement("div")
     alert.classList.add("alert", "alert-primary", "w-75")
     alert.setAttribute("role", "alert")
@@ -326,7 +323,6 @@ const addTraitToAssistant = async (element) => {
         createToast("Select an assistant first")
     } else {
         let url = `${element.getAttribute("data-url")}${activeAssistant.id}`
-        console.log(url)
         const response = await fetch(url, {
             method: "POST",
         })
@@ -363,7 +359,6 @@ const initializeAssistantChatHistory = () => {
     showMessage(message.value, true)
     if (traits.length > 0) {
         for (let i=0; i < traits.length; i++) {
-            console.log(traits[i])
             let title = traits[i].getAttribute("data-bs-title")
             let reasonWhy = traits[i].getAttribute("data-bs-content")
             traitsPrompt += `${title} \n${reasonWhy}\n\n`
@@ -373,7 +368,6 @@ const initializeAssistantChatHistory = () => {
     formData.append("base-prompt", base_prompt.value)
     formData.append("traits", traitsPrompt)
     formData.append("message", message.value)
-    console.log(formData)
     let systemPrompt = `${basePrompt.value}
         
 Below there is a list of character traits with assigned
@@ -387,7 +381,6 @@ ${traitsPrompt}`
 
         chatHistory.push({"role": "system", "content": systemPrompt})
         chatHistory.push({"role": "human", "content": message.value})
-        console.log(chatHistory)
         return formData
 }
 
@@ -396,7 +389,6 @@ const handleChatResponse = (data) => {
     if (data.status == 200) {
         showMessage(data.answer, false)
         chatHistory.push({"role": "assistant", "content": data.answer})
-        console.log(chatHistory)
         const promptTokens = document.getElementById("prompt-tokens")
         const completionTokens = document.getElementById("completion-tokens")
         let newPromptTokens = parseInt(promptTokens.innerText) + parseInt(data.prompt_tokens)
