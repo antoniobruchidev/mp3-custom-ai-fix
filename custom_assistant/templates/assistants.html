@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Collections{% endblock %}
 {% block content %}
+<div class="container">
 <h1 class="text-center mt-5">
     Assistants Page
 </h1>
@@ -67,19 +68,26 @@
             Your message
         </div>
         <div class="card-body">
-            <div class="mb-3">
-                <label for="message" class="form-label">Message:</label>
-                <textarea class="form-control" id="message" rows="3"></textarea>
-            </div>
-            <button id="send-message" class="btn btn-send-message" type="button">
-                Send message
-            </button>
-            <div class="card mt-4">
+            <div class="card mt-2">
                 <div class="card-header">
                     History - Tokens usage: <p class="d-inline-block">Prompt: <span id="prompt-tokens">0</span> - Completion: <span id="completion-tokens">0</span></p>
                 </div>
                 <div class="card-body" id="answer-container">
                 </div>
+            </div>
+            <div class="mt-2">
+                <label for="message" class="form-label">Message:</label>
+                <textarea class="form-control" id="message" rows="3"></textarea>
+            </div>
+            
+            <div class="btn-group mt-3 w-100" role="group" aria-label="Add assistants">
+                <button id="send-message" class="btn btn-send-message" type="button">
+                    Send message
+                </button>
+                <button id="save-history" class="btn btn-save-history rounded-end" type="button" data-url="{{ url_for('save_chat_history')}}">
+                    Save History
+                </button>
+                <input id="chat-history-name" class="form-control ms-4 w-50" type="text" placeholder="Give your chat history a name" aria-label="Chat history name">
             </div>
         </div>
     </div>
@@ -175,7 +183,7 @@
         </div>
     </div>
 </div>
-
+</div>
 {% endblock %}
 
 {% block postloadjs %}

@@ -1,7 +1,55 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
 {% block content %}
-<h1 class="text-center">
-    Home Page
-</h1>
+    <div id="homeCarousel" class="carousel carousel slide w-75 mx-auto" data-bs-ride="carousel">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#homeCaptions" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+            <button type="button" data-bs-target="#homeCaptions" data-bs-slide-to="1" aria-label="Slide 2"></button>
+            <button type="button" data-bs-target="#homeCaptions" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active" data-bs-interval="2000">
+                <img src="{{ url_for('static', filename='images/vectorstore.png')}}" class="d-block" alt="Ingest your PDFs into colections and ask them questions">
+                <div class="carousel-caption d-none d-md-block darker">
+                    <h5>Semanthic search</h5>
+                    <p>Ingest your PDFs into colections and ask them questions.</p>
+                </div>
+            </div>
+            <div class="carousel-item" data-bs-interval="2000">
+                <img src="{{ url_for('static', filename='images/highly_customizable.png')}}" class="d-block" alt="Create all the variants you can think of">
+                <div class="carousel-caption d-none d-md-block darker">
+                    <h5>Highly customizable</h5>
+                    <p>Create all the variants you can think of.</p>
+                </div>
+            </div>
+            <div class="carousel-item" data-bs-interval="2000">
+                <img src="{{ url_for('static', filename='images/easy_to_manage.png')}}" class="d-block" alt="Easy to manage">
+                <div class="carousel-caption d-none d-md-block darker">
+                    <h5>Easy to manage</h5>
+                    <p>Easy to manage.</p>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#homeCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#homeCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+    <a href="{{ url_for('playground')}}" class="btn btn-manage text-center d-block w-75 mx-auto mt-3">Get Started</a>
+    
+{% endblock %}
+
+{% block postloadjs %}
+<script>
+    const myCarouselElement = document.querySelector('#homeCarousel')
+
+    const carousel = new bootstrap.Carousel(myCarouselElement, {
+    interval: 2000,
+    touch: false
+    })
+</script>
 {% endblock %}

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Playground{% endblock %}
 {% block content %}
+<div class="container">
 <h1 class="text-center mt-5">
     Playground Page
 </h1>
@@ -91,8 +92,9 @@
                          
                 <textarea class="form-control" placeholder="Reason why..." id="reason-why" style="height: 100px"></textarea>
 
-                {% if user.is_authenticated %}
-                    <div id="traits-container-modal">
+                <div id="traits-container-modal">
+
+                    {% if user.is_authenticated %}
                         <p> Your existing traits - Double click to choose, single click to see details</p>
                         {% if traits %}
                             {% for trait in traits%}
@@ -109,8 +111,8 @@
                               </button>
                             {% endfor %}
                         {% endif %}
-                    </div>
-                {% endif %}
+                    {% endif %}
+                </div>
                 
             </div>
             <div class="modal-footer">
@@ -120,7 +122,7 @@
         </div>
     </div>
   </div>
-  
+</div>
 {% endblock %}
 
 {% block postloadjs %}
