@@ -18,8 +18,21 @@ assistant_charactertrait = db.Table(
     )
 )
 ```
-
 Many to many relationship between the Assistant and the CharacterTrait models. 
+
+### collection_sources
+```python
+collection_sources = db.Table(
+    # table for the many to many relationship between collection and source tables
+    "collection_sources",
+    db.Column(
+        "collection_id", db.Integer, db.ForeignKey("collections.id", ondelete="CASCADE")
+    ),
+    db.Column("sources", db.Integer, db.ForeignKey("sources.id", ondelete="CASCADE")),
+)
+```
+Many to many relationship between the Collection and the Sources models.
+
 ## DB Models
 
 ### Users
@@ -175,5 +188,70 @@ class ChatHistory(db.Model):
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE")
+    )
+```
+
+### Collections
+```python
+class Collection(db.Model):
+    # schema for the collection table
+    __tablename__ = "collections"
+    id = db.Column(db.Integer, primary_key=True)
+    collection_name = db.Column(db.String(32), nullable=False)
+    documents_description = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
+    sources = db.relationship(
+        "Source", secondary=collection_sources, backref="collections", lazy=True
+    )
+    share = db.Column(db.Boolean, default=False)
+    safe = db.Column(db.Boolean, default=False)
+    vectorstore_id = db.Column(db.String, nullable=True)
+```
+
+### Source
+```python
+class Source(db.Model):
+    # schema for the source table
+    __tablename__ = "sources"
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(64), nullable=False)
+    name = db.Column(db.String(16), nullable=True)
+    description = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
+    aws_key = db.Column(db.String, nullable=False)
+
+    def __repr__(self):
+        return self.description
+```
+
+### BackgroundIngestionTask
+```python
+class BackgroundIngestionTask(db.Model):
+    # schema for the background task table
+    __tablename__ = "background_ingestion_tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(
+        db.Integer, db.ForeignKey("collections.id", ondelete="CASCADE"), nullable=False
+    )
+    source_id = db.Column(
+        db.Integer, db.ForeignKey("sources.id", ondelete="CASCADE"), nullable=False
+    )
+    heroku_task_id = db.Column(db.String, nullable=True)
+    proprietary_task_id = db.Column(db.String, nullable=True)
+    result = db.Column(db.Boolean, nullable=True)
+    ended = db.Column(db.Boolean, default=False)
+```
+
+### DailyTokens
+```python
+class DailyTokens(db.Model):
+    # schema for the user daily token usage
+    __tablename__ = "daily_tokens"
+    id = db.Column(db.Integer, primary_key=True)
+    day = db.Column(db.String(10), nullable=False)
+    prompt_tokens = db.Column(db.Integer, nullable=False)
+    completion_tokens = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 ```

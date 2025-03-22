@@ -123,7 +123,7 @@ def query():
         except OperationalError as e:
             error = e
     answer = query_with_retriever(
-        question=request.json.get("question"),
+        question=question,
         collection=collection.collection_name,
         user_id=collection.user_id,
     )

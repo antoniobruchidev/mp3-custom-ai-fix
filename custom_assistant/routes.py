@@ -1351,8 +1351,8 @@ def delete_account(user_id):
         render_template: login
     """
     g_client_id = os.getenv("GOOGLE_CLIENT_ID")
-    try:
-        if user_id == current_user.id:
+    try:        
+        if int(user_id) == int(current_user.id):
             logout_user()
             user = db.session.get(User, user_id)
             db.session.delete(user)
