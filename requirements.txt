@@ -8,6 +8,12 @@ alembic==1.15.1
     # via flask-migrate
 amqp==5.3.1
     # via kombu
+annotated-types==0.7.0
+    # via pydantic
+anyio==4.9.0
+    # via
+    #   httpx
+    #   openai
 argon2-cffi==23.1.0
     # via flask-argon2
 argon2-cffi-bindings==21.2.0
@@ -28,7 +34,10 @@ botocore==1.37.12
 celery[redis]==5.4.0
     # via -r requirements/requirements.in
 certifi==2025.1.31
-    # via requests
+    # via
+    #   httpcore
+    #   httpx
+    #   requests
 cffi==1.17.1
     # via argon2-cffi-bindings
 charset-normalizer==3.4.1
@@ -46,6 +55,8 @@ click-plugins==1.1.1
     # via celery
 click-repl==0.3.0
     # via celery
+distro==1.9.0
+    # via openai
 flask==3.0.3
     # via
     #   -r requirements/requirements.in
@@ -70,12 +81,23 @@ greenlet==3.1.1
     # via sqlalchemy
 gunicorn==22.0.0
     # via -r requirements/requirements.in
+h11==0.14.0
+    # via httpcore
+httpcore==1.0.7
+    # via httpx
+httpx==0.28.1
+    # via openai
 idna==3.10
-    # via requests
+    # via
+    #   anyio
+    #   httpx
+    #   requests
 itsdangerous==2.2.0
     # via flask
 jinja2==3.1.6
     # via flask
+jiter==0.9.0
+    # via openai
 jmespath==1.0.1
     # via
     #   boto3
@@ -89,6 +111,8 @@ markupsafe==3.0.2
     #   jinja2
     #   mako
     #   werkzeug
+openai==1.68.2
+    # via -r requirements/requirements.in
 packaging==24.2
     # via gunicorn
 prompt-toolkit==3.0.50
@@ -97,6 +121,10 @@ psycopg2-binary==2.9.9
     # via -r requirements/requirements.in
 pycparser==2.22
     # via cffi
+pydantic==2.10.6
+    # via openai
+pydantic-core==2.27.2
+    # via pydantic
 python-dateutil==2.9.0.post0
     # via
     #   botocore
@@ -113,14 +141,24 @@ s3transfer==0.11.4
     # via boto3
 six==1.17.0
     # via python-dateutil
+sniffio==1.3.1
+    # via
+    #   anyio
+    #   openai
 sqlalchemy==2.0.31
     # via
     #   -r requirements/requirements.in
     #   alembic
     #   flask-sqlalchemy
+tqdm==4.67.1
+    # via openai
 typing-extensions==4.12.2
     # via
     #   alembic
+    #   anyio
+    #   openai
+    #   pydantic
+    #   pydantic-core
     #   sqlalchemy
 tzdata==2025.1
     # via
