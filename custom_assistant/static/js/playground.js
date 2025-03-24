@@ -229,21 +229,6 @@ if (saveAssistantButton != null) {
     saveAssistantButton.addEventListener("click", saveAssistant)
 }
 
-
-const checkBackupServer = () => {
-    setTimeout(async function(){
-        const url = window.location.pathname.replace("/playground", "/backup_server_status")
-        const response = await fetch (url, {
-            method: "GET"
-        })
-        const data = await response.json()
-        if (data.backup_server_up) {
-            backupServerUp = "True"
-        }
-        console.log(backupServerUp)
-    })
-}
-
 /**
  * Method to create a spinner and notify the user
  * @param {html element} element 
@@ -318,8 +303,25 @@ const preparePrompts = () => {
     }
 }
 
+/**
+ * Method with timeout to be nested in a loop to chck for the backup server status
+ */
+const checkBackupServer = () => {
+    setTimeout(async function(){
+        const url = window.location.pathname.replace("/playground", "/backup_server_status")
+        const response = await fetch (url, {
+            method: "GET"
+        })
+        const data = await response.json()
+        if (data.backup_server_up) {
+            backupServerUp = "True"
+        }
+        console.log(backupServerUp)
+    }, 10000)
+}
+
 if (backupServerUp != "True"){
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 50; i++) {
         checkBackupServer()
         if (backupServerUp){
             break

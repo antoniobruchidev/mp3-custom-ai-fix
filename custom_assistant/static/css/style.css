@@ -9,7 +9,7 @@ body {
 .darker {
     background-color: rgba(28, 45, 141, 0.76);
     color:#ffffff !important;
-    box-shadow: #0248B1;
+    box-shadow: 5px 5px #0248B1;
     border-radius: 20px;
 }
 

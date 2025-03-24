@@ -8,13 +8,19 @@ To be able to do this I'll have to work with "abliterated" models (more later), 
 
 Altough at the end I did not let user shares their assistant, in the future they will be able to share their collections.
 
+[LIVE BETA](https://the-custom-assistant-b5bd8279ae7f.herokuapp.com/)
+
 ## UX
 The platform targets any person who wants to play with a completely unrestrictred and customizable AI chatbot.
 The application is designed to distinguish its users in:
  - UNREGISTERED USERS: They will be able to chat with anything they create in the playground by mixing base prompt and character traits without being able to save.
  - REGISTERED USERS: They will be able to create, modify, save their own assistants, their character traits and their chat histories.
 
-[MODEL USED](https://huggingface.co/DavidAU/Llama-3.2-8X3B-MOE-Dark-Champion-Instruct-uncensored-abliterated-18.4B-GGUF)
+[MODEL USED](huihui_ai/qwen2.5-1m-abliterated:7b-instruct-q8_0)
+
+If proprietary inference server is down a backup inference point is started. But users will be able to chat with it only as a normal chatbot, have not tested with the traits system and it is default to off.
+
+[BACKUP SERVER MODEL](https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-1M-GGUF)
 
 ### User Stories
  - As an UNREGISTERED USER I'd like to be able to try the platform.
