@@ -390,6 +390,13 @@ def register():
         email = request.form.get("email")
         user = None
         try:
+            user = db.session.query(User).filter(User.email == email).first()
+            if user is not None:
+                db.session.close()
+                error = "Email address already in use."
+                return render_template(
+                    "register.html", g_client_id=g_client_id, error=error
+                )
             user = User(email=email).sign_up_with_email(
                 request.form.get("password", None),
                 request.form.get("confirm-password", None),
@@ -400,10 +407,14 @@ def register():
                 db.session.close()
                 send_activation_email(user)
                 error = f"An email has been sent to {user.email}. Please verify your email address."
-                return render_template("login.html", g_client_id=g_client_id, error=error)
+                return render_template(
+                    "login.html", g_client_id=g_client_id, error=error
+                )
             else:
                 error = f"Email {user.email} already present"
-                return render_template("login.html", error=error, g_client_id=g_client_id)
+                return render_template(
+                    "login.html", error=error, g_client_id=g_client_id
+                )
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
@@ -411,10 +422,10 @@ def register():
             return render_template(
                 "register.html", g_client_id=g_client_id, error=error
             )
-        except Exception:
+        except Exception as e:
             db.session.rollback()
             db.session.close()
-            error = f"Operational error - please retry..."
+            error = f"{e}"
             return render_template(
                 "register.html", g_client_id=g_client_id, error=error
             )
