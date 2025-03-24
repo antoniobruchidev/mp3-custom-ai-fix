@@ -394,6 +394,16 @@ def register():
                 request.form.get("password", None),
                 request.form.get("confirm-password", None),
             )
+            if user is not None:
+                db.session.add(user)
+                db.session.commit()
+                db.session.close()
+                send_activation_email(user)
+                error = f"An email has been sent to {user.email}. Please verify your email address."
+                return render_template("login.html", g_client_id=g_client_id, error=error)
+            else:
+                error = f"Email {user.email} already present"
+                return render_template("login.html", error=error, g_client_id=g_client_id)
         except OperationalError as e:
             db.session.rollback()
             db.session.close()
@@ -401,16 +411,6 @@ def register():
             return render_template(
                 "register.html", g_client_id=g_client_id, error=error
             )
-        if user is not None:
-            db.session.add(user)
-            db.session.commit()
-            db.session.close()
-            send_activation_email(user)
-            error = f"An email has been sent to {user.email}. Please verify your email address."
-            return render_template("login.html", g_client_id=g_client_id, error=error)
-        else:
-            error = f"Email {user.email} already present"
-            return render_template("login.html", error=error, g_client_id=g_client_id)
     else:
         return render_template("register.html", g_client_id=g_client_id)
 
