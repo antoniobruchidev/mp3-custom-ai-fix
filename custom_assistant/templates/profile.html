@@ -2,135 +2,140 @@
 {% block title %}Profile{% endblock %}
 {% block content %}
 <div class="container">
-<h1 class="text-center mt-5">
-    Profile Page
-</h1>
+    <h1 class="text-center mt-5">
+        Profile Page
+    </h1>
 
-<div class="row row-cols-1 row-cols-md-3 g-4 mt-5">
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-header">
-                My account:
-            </div>
-            <div class="card-body">
-                <h5 class="card-title">Actions available</h5>
-                <div class="list-group">
-                    <a href="{{ url_for('password_change') }}" class="list-group-item list-group-item-action btn-profile">
-                      Change Password
-                    </a>
-                    <button class="list-group-item list-group-item-action btn-profile-discard" data-bs-toggle="modal" data-bs-target="#delete-modal">Delete Account</button>
+    <div class="row row-cols-1 row-cols-md-3 g-4 mt-5">
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    My account:
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Actions available</h5>
+                    <div class="list-group">
+                        <a href="{{ url_for('password_change') }}" class="list-group-item list-group-item-action btn-profile">
+                            Change Password
+                        </a>
+                        <button class="list-group-item list-group-item-action btn-profile-discard" data-bs-toggle="modal" data-bs-target="#delete-modal">
+                            Delete Account
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-header">
-                My daily tokens usage - available {{ available_tokens }} of {{ daily_tokens_limit }}
-            </div>
-            <div class="card-body">
-                <h5 class="card-title">Check your daily usage</h5>
-                <select id="tokens-select" class="form-select form-select-sm" data-url="{{ url_for('get_tokens', daily_tokens_id='')}}" aria-label="Daily usage">
-                    <option value="0" selected>Select a day</option>
-                    {% for token in tokens %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    My daily tokens usage - available {{ available_tokens }} of {{ daily_tokens_limit }}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Check your daily usage</h5>
+                    <select id="tokens-select" class="form-select form-select-sm" data-url="{{ url_for('get_tokens', daily_tokens_id='')}}" aria-label="Daily usage">
+                        <option selected>Select a day</option>
+                        {% for token in tokens %}
                         <option value="{{ token.id }}">{{ token.day }}<option>
-                    {% endfor %}
-                </select>
-                <div class="mb-3 row">
-                    <label for="staticPromptTokensUsage" class="col-sm-6 col-form-label">Prompt tokens:</label>
-                    <div class="col-sm-6">
-                      <input type="text" readonly class="form-control-plaintext" id="staticPromptTokensUsage" value="">
+                        {% endfor %}
+                    </select>
+                    <div class="mb-3 row">
+                        <label for="staticPromptTokensUsage" class="col-sm-6 col-form-label">Prompt tokens:</label>
+                        <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="staticPromptTokensUsage" value="">
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="staticCompTokensUsage" class="col-sm-6 col-form-label">Completion tokens:</label>
+                        <div class="col-sm-6">
+                            <input type="text" readonly class="form-control-plaintext" id="staticCompTokensUsage" value="">
+                        </div>
                     </div>
                 </div>
-                <div class="mb-3 row">
-                    <label for="staticCompTokensUsage" class="col-sm-6 col-form-label">Completion tokens:</label>
-                    <div class="col-sm-6">
-                      <input type="text" readonly class="form-control-plaintext" id="staticCompTokensUsage" value="">
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    My vectorstore - Collections available {{ collections_available }} of {{ collections_limit }}
+                    <span class="d-inline-block">
+                        Sources available {{ sources_available }} of {{ sources_limit }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Your vectorstore collections:</h5>
+                    <div class="list-group">
+                        {% for collection, sources in collections %}
+                        <button type="button" class="list-group-item list-group-item-action"
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-custom-class="custom-tooltip"
+                            data-bs-title="this collection contains the followins sources {% for source in sources %}- {{ source.name }} {% endfor %}">
+                            {{ collection.collection_name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    My sources - available {{ sources_available }} of {{ sources_limit }}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Your sources</h5>
+                    <p class="card-text">
+                        In order to be able to remove a source from your account, you will have to delete every collection it is ingested in.
+                    </p>
+                    <h6 class="card-subtitle">Non deletable sources</h6>
+                    <div class="list-group">
+                        {% for source in not_deletable_sources %}
+                        <button type="button" class="list-group-item list-group-item-action"
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-custom-class="custom-tooltip"
+                            data-bs-title="{{ source.description }}">
+                            {{ source.name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <h6 class="card-subtitle mt-2">Deletable sources</h6>
+                    <div class="list-group">
+                        {% for source in deletable_sources %}
+                        <button type="button" class="list-group-item list-group-item-action"
+                            data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-custom-class="custom-tooltip"
+                            data-bs-title="{{ source.description }}">
+                            {{ source.name }}
+                        </button>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-header">
-                My vectorstore - Collections available {{ collections_available }} of {{ collections_limit }}
-                <span class="d-inline-block">Sources available {{ sources_available }} of {{ sources_limit }}
-            </div>
-            <div class="card-body">
-                <h5 class="card-title">Your vectorstore collections:</h5>
-                <div class="list-group">
-                    {% for collection, sources in collections %}
-                    <button type="button" class="list-group-item list-group-item-action"
-                        data-bs-toggle="tooltip" data-bs-placement="top"
-                        data-bs-custom-class="custom-tooltip"
-                        data-bs-title="this collection contains the followins sources {% for source in sources %}- {{ source.name }} {% endfor %}">
-                        {{ collection.collection_name }}
-                    </button>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-header">
-                My sources - available {{ sources_available }} of {{ sources_limit }}
-            </div>
-            <div class="card-body">
-                <h5 class="card-title">Your sources</h5>
-                <p class="card-text">
-                    In order to be able to remove a source from your account, you will have to delete every collection it is ingested in.
-                </p>
-                <h6 class="card-subtitle">Non deletable sources</h6>
-                <div class="list-group">
-                    {% for source in not_deletable_sources %}
-                    <button type="button" class="list-group-item list-group-item-action"
-                        data-bs-toggle="tooltip" data-bs-placement="top"
-                        data-bs-custom-class="custom-tooltip"
-                        data-bs-title="{{ source.description }}">
-                        {{ source.name }}
-                    </button>
-                    {% endfor %}
-                </div>
-                <h6 class="card-subtitle mt-2">Deletable sources</h6>
-                <div class="list-group">
-                    {% for source in deletable_sources %}
-                    <button type="button" class="list-group-item list-group-item-action"
-                        data-bs-toggle="tooltip" data-bs-placement="top"
-                        data-bs-custom-class="custom-tooltip"
-                        data-bs-title="{{ source.description }}">
-                        {{ source.name }}
-                    </button>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
+</div>
 
 
 
 <div class="modal" id="delete-modal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title">Delete confirmation</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-            <p>Are you sure you want to permanently delete your account? Type <code>Delete my account</code> to confirm.</p>
-            <div class="form-floating mb-3">
-                <input type="text" class="form-control" id="deleteConfirmation" placeholder="name@example.com">
-                <label for="deleteConfirmation">Confirmation</label>
+            <div class="modal-header">
+                <h5 class="modal-title">Delete confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to permanently delete your account? Type <code>Delete my account</code> to confirm.</p>
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control" id="deleteConfirmation" placeholder="name@example.com">
+                    <label for="deleteConfirmation">Confirmation</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-trait" data-bs-dismiss="modal" id="modal-close">Close</button>
+                <button type="button" class="btn btn-discard" id="delete-confirmation" data-delete-url="{{ url_for('delete_account', user_id=user_id)}}" disabled>Permanently delete</button>
             </div>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-trait" data-bs-dismiss="modal" id="modal-close">Close</button>
-            <button type="button" class="btn btn-discard" id="delete-confirmation" data-delete-url="{{ url_for('delete_account', user_id=user_id)}}" disabled>Permanently delete</button>
-        </div>
-        </div>
     </div>
-</div>
 </div>
 {% endblock %}
 

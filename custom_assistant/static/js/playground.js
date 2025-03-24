@@ -306,17 +306,22 @@ const preparePrompts = () => {
 /**
  * Method with timeout to be nested in a loop to chck for the backup server status
  */
-const checkBackupServer = () => {
+const checkBackupServer = async () => {
     setTimeout(async function(){
         const url = window.location.pathname.replace("/playground", "/backup_server_status")
         const response = await fetch (url, {
             method: "GET"
         })
         const data = await response.json()
+        console.log(data.backup_server_up)
         if (data.backup_server_up) {
             backupServerUp = "True"
+            sendButton.removeAttribute("disabled")
+            const alertSpan = document.getElementById("alert-span")
+            alertSpan.innerText = "Service will be slower and assistant not customizable, sorry for the incovenience."
+
         }
-        console.log(backupServerUp)
+        console.log(data.backup_server_up)
     }, 10000)
 }
 
@@ -327,7 +332,4 @@ if (backupServerUp != "True"){
             break
         }
     }
-    sendButton.removeAttribute("disabled")
-    const alertSpan = document.getElementById("alert-span")
-    alertSpan.innerText = "Service will be slower and assistant not customizable, sorry for the incovenience."
 }

@@ -9,9 +9,9 @@
     <div class="alert alert-danger" role="alert">
         Proprietary inference hardware is down since {{ timestamp }}.
         {% if backup_server_up %}
-            Service will be slower and assistant not customizable, sorry for the incovenience.
+        <span id="alert-span">Service will be slower and assistant not customizable, sorry for the incovenience.</span>
         {% else %}
-            <span id="alert-span">Backup server starting, trying again in one minute. Sorry for the incovenience.</span>
+        <span id="alert-span">Backup server starting, trying again in one minute. Sorry for the incovenience.</span>
         {% endif %}
         <a href="https://github.com/antoniobruchidev/mp3-custom-ai" target="blank" class="alert-link">Know more...</a>
     </div>
@@ -138,7 +138,7 @@
 
 {% block postloadjs %}
 <script>
-    const backupServerUp = "{{ backup_server_up }}"
+    let backupServerUp = "{{ backup_server_up }}"
     const timestamp = "{{ timestamp }}"
 </script>
 <script src="{{ url_for('static', filename="js/playground.js")}}"></script>

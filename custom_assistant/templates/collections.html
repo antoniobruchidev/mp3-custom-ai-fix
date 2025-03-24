@@ -2,134 +2,129 @@
 {% block title %}Collections{% endblock %}
 {% block content %}
 <div class="container">
-<h1 class="text-center mt-5">
-    Collections Page
-</h1>
-{% if timestamp != 0 %}
+    <h1 class="text-center mt-5">
+        Collections Page
+    </h1>
+    {% if timestamp != 0 %}
     <div class="alert alert-danger" role="alert">
         Proprietary inference hardware is down since {{ timestamp }}.   <a href="https://github.com/antoniobruchidev/mp3-custom-ai" target="blank" class="alert-link">Know more...</a>
     </div>
-{% endif %}
-<div class="collection-container mt-5">
-    <div class="card">
-        <div class="card-header">
-            Your Collections
-            <span class="slots-available ms-3 mt-1 d-block">
-                Collections available: {{ collections_available }} of {{ collections_limit }}
-            </span>
-            <span class="slots-available ms-3">
-                Sources available: {{ sources_available }} of {{ sources_limit }}
-            </span>
-        </div>
-        <div class="card-body">
-            <select id="collection-select" class="form-select" aria-label="Select you collection" data-url="{{ url_for('get_collection', collection_id='')}}">
-                <option selected>Select your collection</option>
-                {% for collection, sources in collections_with_sources %}
-                    <option value="{{ collection.id }}">{{ collection.collection_name }}
-                        {% for source in sources %}
-                         - {{ source.filename|truncate(32) }}
-                        {% endfor %}
-                    </option>
-                {% endfor %}
-            </select>
-            <form action="{{ url_for("create_collection") }}" method="post" id="collection-form">
-                <input type="hidden" id="collection-id", name="collection-id">
-                <div class="my-3 w-50">
-                    <label for="collection-name" class="form-label">Name</label>
-                    <input id="collection-name" class="form-control" type="text" name="collection-name" required>
+    {% endif %}
+    <div class="collection-container mt-5">
+        <div class="card">
+            <div class="card-header">
+                Your Collections
+                <span class="slots-available ms-3 mt-1 d-block">
+                    Collections available: {{ collections_available }} of {{ collections_limit }}
+                </span>
+                <span class="slots-available ms-3">
+                    Sources available: {{ sources_available }} of {{ sources_limit }}
+                </span>
+            </div>
+            <div class="card-body">
+                <select id="collection-select" class="form-select" aria-label="Select you collection" data-url="{{ url_for('get_collection', collection_id='')}}">
+                    <option selected>Select your collection</option>
+                    {% for collection, sources in collections_with_sources %}
+                        <option value="{{ collection.id }}">{{ collection.collection_name }}
+                            {% for source in sources %}
+                            - {{ source.filename|truncate(32) }}
+                            {% endfor %}
+                        </option>
+                    {% endfor %}
+                </select>
+                <form action="{{ url_for("create_collection") }}" method="post" id="collection-form">
+                    <input type="hidden" id="collection-id" name="collection-id">
+                    <div class="my-3 w-50">
+                        <label for="collection-name" class="form-label">Name</label>
+                        <input id="collection-name" class="form-control" type="text" name="collection-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description:</label>
+                        <textarea class="form-control" id="collection-description" name="collection-description" rows="3" required></textarea>
+                    </div>
+                    <div class="btn-group" role="group" aria-label="Add collections">
+                        <button id="clear" class="btn btn-discard" type="button">
+                            Clear
+                        </button>
+                        <button id="delete-collection" class="btn btn-discard rounded-start hidden" type="button">
+                            Delete Collection
+                        </button>
+                        <button id="edit-collection" class="btn btn-edit-collection hidden" type="button">
+                            Edit
+                        </button>
+                        <button id="save-collection" class="btn btn-save-collection" type="submit">
+                            Save Collection
+                        </button>
+                    </div>
+                    <button id="add-source" class="btn btn-manage d-inline ms-3" type="button"
+                        data-bs-toggle="offcanvas" data-bs-target="#offcanvasSources" aria-controls="offcanvasSources">
+                        Manage sources
+                    </button>
+                </form>
+                <div id="sources-container" class="mt-2"></div>
                 </div>
-                <div class="mb-3">
-                    <label for="description" class="form-label">Description:</label>
-                    <textarea class="form-control" id="collection-description" name="collection-description" rows="3" required></textarea>
-                </div>
-                <div class="btn-group" role="group" aria-label="Add collections">
-                    <button id="clear" class="btn btn-discard" type="button">
-                        Clear
-                    </button>
-                    <button id="delete-collection" class="btn btn-discard rounded-start hidden" type="button">
-                        Delete Collection
-                    </button>
-                    <button id="edit-collection" class="btn btn-edit-collection hidden" type="button">
-                        Edit
-                    </button>
-                    <button id="save-collection" class="btn btn-save-collection" type="submit">
-                        Save Collection
-                    </button>
-                </div>
-                <button id="add-source" class="btn btn-manage d-inline ms-3" type="button"
-                    data-bs-toggle="offcanvas" data-bs-target="#offcanvasSources" aria-controls="offcanvasSources">
-                    Manage sources
-                </button>
-            </form>
-            <div id="sources-container" class="mt-2">
             </div>
         </div>
-    </div>
-</div>
 
 
 
-<div class="chat-container mt-4">
-    <div class="card">
-        <div class="card-header">
-            Your question:
-        </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <label for="question" class="form-label">Question:</label>
-                <textarea class="form-control" id="question" name="question" rows="3"></textarea>
-            </div>
-            <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp > 0 %}disabled{% endif %}>
-                Send message
-            </button>
-            <div class="card mt-4">
+        <div class="chat-container mt-4">
+            <div class="card">
                 <div class="card-header">
-                    Answer:
+                    Your question:
                 </div>
-                <div class="card-body" id="answer-container">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="question" class="form-label">Question:</label>
+                        <textarea class="form-control" id="question" name="question" rows="3"></textarea>
+                    </div>
+                    <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp > 0 %}disabled{% endif %}>
+                        Send message
+                    </button>
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            Answer:
+                        </div>
+                    <div class="card-body" id="answer-container"></div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="modal" id="delete-modal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title">Delete confirmation</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-            <p>Are you sure you want to permanently delete <span id="type"></span>: <span id="record"></span></p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-trait" data-bs-dismiss="modal" id="modal-close">Close</button>
-            <button type="button" class="btn btn-discard" id="delete-confirmation">Permanently delete</button>
-        </div>
-        </div>
-    </div>
-</div>
-
-
-
-<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasSources" aria-labelledby="offcanvasSourcesLabel">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title mx-auto" id="offcanvasSourcesLabel">Sources</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-<div class="offcanvas-body">
-
-    <div class="card">
-        <div class="card-body">
-            <div ="card-header">
-                Your uploaded documents. Select one or add a new.
-                Only PDFs are supported at the moment.
+    <div class="modal" id="delete-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to permanently delete <span id="type"></span>: <span id="record"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-trait" data-bs-dismiss="modal" id="modal-close">Close</button>
+                    <button type="button" class="btn btn-discard" id="delete-confirmation">Permanently delete</button>
+                </div>
             </div>
-            {% if sources|length > 0 %}
-                <h5 class="card-title"> Documents </h5>
-                <div class="accordion" id="accordionSources">
-                    {% for source in sources %}
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasSources" aria-labelledby="offcanvasSourcesLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title mx-auto" id="offcanvasSourcesLabel">Sources</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-header">
+                        Your uploaded documents. Select one or add a new.
+                        Only PDFs are supported at the moment.
+                    </div>
+                    {% if sources|length > 0 %}
+                    <h5 class="card-title"> Documents </h5>
+                    <div class="accordion" id="accordionSources">
+                        {% for source in sources %}
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#source{{ source.id }}" aria-expanded="true" aria-controls="source{{ source.id }}">
@@ -150,26 +145,28 @@
                                 </div>
                             </div>
                         </div>
-                    {% endfor %}
-            {% else %}
-                <h5 class="card-title mt-1">No documents </h5>
-            {% endif %}
-            <h6 class="card-subtitle mt-2">Add a new source</h6>
-            <form id="source-form" class="mt-2">
-                <div class="my-2">
-                    <label for="source-name" class="form-label">Name</label>
-                    <input id="source-name" class="form-control" type="text" name="source-name" required>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <h5 class="card-title mt-1">No documents </h5>
+                    {% endif %}
+                    <h6 class="card-subtitle mt-2">Add a new source</h6>
+                    <form id="source-form" class="mt-2">
+                        <div class="my-2">
+                            <label for="source-name" class="form-label">Name</label>
+                            <input id="source-name" class="form-control" type="text" name="source-name" required>
+                        </div>
+                        <textarea class="form-control mt-2" id="description" name="description" rows="3" placeholder="Document description"></textarea>
+                        <div class="mb-3 mt-2">
+                            <label for="file_input" class="form-label">Upload new document</label>
+                            <input class="form-control" type="file" id="file_input" name="file_input" accept="application/pdf">
+                        </div>
+                        <button type="button" class="btn btn-upload" id="upload-source">Upload new Document</button>
+                    </form>                   
                 </div>
-                <textarea class="form-control mt-2" id="description" name="description" rows="3" placeholder="Document description"></textarea>
-                <div class="mb-3 mt-2">
-                    <label for="file_input" class="form-label">Upload new document</label>
-                    <input class="form-control" type="file" id="file_input" name="file_input" accept="application/pdf">
-                </div>
-                <button type="button" class="btn btn-upload" id="upload-source">Upload new Document</button>
-            </form>                   
+            </div>
         </div>
     </div>
-</div>
 </div>
 {% endblock %}
 

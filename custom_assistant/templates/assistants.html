@@ -2,97 +2,97 @@
 {% block title %}Assistants{% endblock %}
 {% block content %}
 <div class="container">
-<h1 class="text-center mt-5">
-    Assistants
-</h1>
-{% if timestamp != 0 %}
+    <h1 class="text-center mt-5">
+        Assistants
+    </h1>
+    {% if timestamp != 0 %}
     <div class="alert alert-danger" role="alert">
         Proprietary inference hardware is down since {{ timestamp }}.   <a href="https://github.com/antoniobruchidev/mp3-custom-ai" target="blank" class="alert-link">Know more...</a>
     </div>
-{% endif %}
-<div class="collection-container mt-5">
-    <div class="card">
-        <div class="card-header">
-            Your Assistants
-            <span class="slots-available ms-3 mt-1 d-block">
-                Assistants available: {{ assistants_available }} of {{ assistants_limit }}
-            </span>
-            <span class="slots-available ms-3">
-                Traits available: {{ traits_available }} of {{ traits_limit }}
-            </span>
-        </div>
-        <div class="card-body">
-            <select id="assistant-select" class="form-select" aria-label="Select you assistant" data-url="{{ url_for('get_assistant', assistant_id='')}}">
-                <option value="0" selected>Select you assistant</option>
-                {% for assistant, a_traits in assistants_with_traits %}
-                    <option value="{{ assistant.id }}">{{ assistant.name }}
-                        {% for trait in a_traits %}
-                         - {{ trait.trait|truncate(16) }}
-                        {% endfor %}
-                    </option>
-                {% endfor %}
-            </select>
-            <form action="{{ url_for("create_or_edit_assistant") }}" method="post" id="assistant-form">
-                <input type="hidden" id="assistant-id">
-                <div class="my-3 w-50">
-                    <label for="assistant-name" class="form-label">Name</label>
-                    <input id="assistant-name" class="form-control" type="text" name="assistant-name" required>
-                </div>
-                <div class="mb-3">
-                    <label for="assistant-base-prompt" class="form-label">Base prompt:</label>
-                    <textarea class="form-control" id="assistant-base-prompt" name="assistant-base-prompt" rows="3" required></textarea>
-                </div>
-                <div class="btn-group" role="group" aria-label="Add assistants">
-                    <button id="clear" class="btn btn-discard" type="button">
-                        Clear
+    {% endif %}
+    <div class="collection-container mt-5">
+        <div class="card">
+            <div class="card-header">
+                Your Assistants
+                <span class="slots-available ms-3 mt-1 d-block">
+                    Assistants available: {{ assistants_available }} of {{ assistants_limit }}
+                </span>
+                <span class="slots-available ms-3">
+                    Traits available: {{ traits_available }} of {{ traits_limit }}
+                </span>
+            </div>
+            <div class="card-body">
+                <select id="assistant-select" class="form-select" aria-label="Select you assistant" data-url="{{ url_for('get_assistant', assistant_id='')}}">
+                    <option value="0" selected>Select you assistant</option>
+                    {% for assistant, a_traits in assistants_with_traits %}
+                        <option value="{{ assistant.id }}">{{ assistant.name }}
+                            {% for trait in a_traits %}
+                            - {{ trait.trait|truncate(16) }}
+                            {% endfor %}
+                        </option>
+                    {% endfor %}
+                </select>
+                <form action="{{ url_for("create_or_edit_assistant") }}" method="post" id="assistant-form">
+                    <input type="hidden" id="assistant-id">
+                    <div class="my-3 w-50">
+                        <label for="assistant-name" class="form-label">Name</label>
+                        <input id="assistant-name" class="form-control" type="text" name="assistant-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assistant-base-prompt" class="form-label">Base prompt:</label>
+                        <textarea class="form-control" id="assistant-base-prompt" name="assistant-base-prompt" rows="3" required></textarea>
+                    </div>
+                    <div class="btn-group" role="group" aria-label="Add assistants">
+                        <button id="clear" class="btn btn-discard" type="button">
+                            Clear
+                        </button>
+                        <button id="delete-assistant" class="btn btn-discard rounded-start hidden" type="button">
+                            Delete
+                        </button>
+                        <button id="edit-assistant" class="btn btn-edit-assistant hidden" type="button" disabled>
+                            Edit
+                        </button>
+                        <button id="save-assistant" class="btn btn-save-assistant" type="button">
+                            Save Assistant
+                        </button>
+                    </div>
+                    <button id="add-trait" class="btn btn-manage d-inline ms-3" type="button"
+                        data-bs-toggle="offcanvas" data-bs-target="#offcanvasTraits" aria-controls="offcanvasTraits">
+                        Manage traits
                     </button>
-                    <button id="delete-assistant" class="btn btn-discard rounded-start hidden" type="button">
-                        Delete
-                    </button>
-                    <button id="edit-assistant" class="btn btn-edit-assistant hidden" type="button" disabled>
-                        Edit
-                    </button>
-                    <button id="save-assistant" class="btn btn-save-assistant" type="button">
-                        Save Assistant
-                    </button>
-                </div>
-                <button id="add-trait" class="btn btn-manage d-inline ms-3" type="button"
-                    data-bs-toggle="offcanvas" data-bs-target="#offcanvasTraits" aria-controls="offcanvasTraits">
-                    Manage traits
-                </button>
-            </form>
-            <div id="traits-container" class="mt-2">
+                </form>
+                <div id="traits-container" class="mt-2"></div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="chat-container mt-4">
-    <div class="card">
-        <div class="card-header">
-            Your message
-        </div>
-        <div class="card-body">
-            <div class="card mt-2">
-                <div class="card-header">
-                    History - Tokens usage: <p class="d-inline-block">Prompt: <span id="prompt-tokens">0</span> - Completion: <span id="completion-tokens">0</span></p>
-                </div>
-                <div class="card-body" id="answer-container">
-                </div>
+    <div class="chat-container mt-4">
+        <div class="card">
+            <div class="card-header">
+                Your message
             </div>
-            <div class="mt-2">
-                <label for="message" class="form-label">Message:</label>
-                <textarea class="form-control" id="message" rows="3"></textarea>
-            </div>
+            <div class="card-body">
+                <div class="card mt-2">
+                    <div class="card-header">
+                        History - Tokens usage: <p class="d-inline-block">Prompt: <span id="prompt-tokens">0</span> - Completion: <span id="completion-tokens">0</span></p>
+                    </div>
+                    <div class="card-body" id="answer-container">
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <label for="message" class="form-label">Message:</label>
+                    <textarea class="form-control" id="message" rows="3"></textarea>
+                </div>
             
-            <div class="btn-group mt-3 w-100" role="group" aria-label="Add assistants">
-                <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp > 0 %}disabled{% endif %}>
-                    Send message
-                </button>
-                <button id="save-history" class="btn btn-save-history rounded-end" type="button" data-url="{{ url_for('save_chat_history')}}">
-                    Save History
-                </button>
-                <input id="chat-history-name" class="form-control ms-4 w-50" type="text" placeholder="Give your chat history a name" aria-label="Chat history name">
+                <div class="btn-group mt-3 w-100" role="group" aria-label="Add assistants">
+                    <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp > 0 %}disabled{% endif %}>
+                        Send message
+                    </button>
+                    <button id="save-history" class="btn btn-save-history rounded-end" type="button" data-url="{{ url_for('save_chat_history')}}">
+                        Save History
+                    </button>
+                    <input id="chat-history-name" class="form-control ms-4 w-50" type="text" placeholder="Give your chat history a name" aria-label="Chat history name">
+                </div>
             </div>
         </div>
     </div>
@@ -121,73 +121,73 @@
         <h5 class="offcanvas-title mx-auto" id="offcanvasTraitsLabel">Traits</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-<div class="offcanvas-body">
+    <div class="offcanvas-body">
 
-    <div class="card">
-        <div class="card-header">
-            Available traits: {{ traits_available }}
-        </div>
-        <div class="card-body">
-            {% if traits|length > 0 %}
+        <div class="card">
+            <div class="card-header">
+                Available traits: {{ traits_available }}
+            </div>
+            <div class="card-body">
+                {% if traits|length > 0 %}
                 <div class="accordion" id="accordionTraits">
                     {% for trait in traits %}
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#trait{{ trait.id }}" aria-expanded="true" aria-controls="trait{{ trait.id }}">
-                                {{ trait.trait|upper }}
-                                </button>
-                            </h2>
-                            <div id="trait{{ trait.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionTraits">
-                                <div class="accordion-body">
-                                    <form method="post" action="{{ url_for("create_or_edit_trait")}}" class="mt-2" id="form-trait{{ trait.id }}">
-                                        <input type="hidden" name="trait" value="{{ trait.trait }}">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#trait{{ trait.id }}" aria-expanded="true" aria-controls="trait{{ trait.id }}">
+                            {{ trait.trait|upper }}
+                            </button>
+                        </h2>
+                        <div id="trait{{ trait.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionTraits">
+                            <div class="accordion-body">
+                                <form method="post" action="{{ url_for("create_or_edit_trait")}}" class="mt-2" id="form-trait{{ trait.id }}">
+                                    <input type="hidden" name="trait" value="{{ trait.trait }}">
 
-                                        <label id="value-label{{ trait.id }}" for="value" class="form-label">Value: {{ trait.value }}</label>
-                                        <input type="range" data-id="{{ trait.id }}" class="form-range mt-2" name="value" min="1" max="10" id="value{{ trait.id }}" value="{{ trait.value }}" required disabled>
-                                                
-                                        <textarea class="form-control" name="reason-why" id="reason-why{{ trait.id }}" style="height: 100px" required disabled>{{ trait.reason_why }}</textarea>
-
-                                        
-                                        <div class="btn-group w-100 mt-2" role="group" aria-label="Manage traits">
-                                            <button id="delete{{ trait.id }}" class="btn btn-discard" type="button" data-bs-id="{{ trait.id }}" data-bs-url="{{ url_for('delete_trait', trait_id=trait.id )}}" data-bs-record="{{ trait.trait }}" data-bs-type="Trait" data-bs-toggle="modal" data-bs-target="#delete-modal">
-                                                Delete
-                                            </button>
-                                            <button id="edit{{ trait.id }}" class="btn btn-edit-trait" type="button" data-id="{{ trait.id }}">
-                                                Edit Trait
-                                            </button>
-                                            <button id="save{{ trait.id}}" class="btn btn-save-trait" type="button" data-id="{{ trait.id }}" disabled>
-                                                Save Trait
-                                            </button>
-                                        </div>
-
-                                        <button class="btn btn-add-trait w-100" data-url="{{ url_for('add_trait_to_assistant', trait_id=trait.id, assistant_id='') }}" type="button">
-                                            Add to active assistant <i class="fa-solid fa-angles-right"></i>
+                                    <label id="value-label{{ trait.id }}" for="value" class="form-label">Value: {{ trait.value }}</label>
+                                    <input type="range" data-id="{{ trait.id }}" class="form-range mt-2" name="value" min="1" max="10" id="value{{ trait.id }}" value="{{ trait.value }}" disabled>
+                                            
+                                    <textarea class="form-control" name="reason-why" id="reason-why{{ trait.id }}" style="height: 100px" required disabled>{{ trait.reason_why }}</textarea>
+                                    
+                                    <div class="btn-group w-100 mt-2" role="group" aria-label="Manage traits">
+                                        <button id="delete{{ trait.id }}" class="btn btn-discard" type="button" data-bs-id="{{ trait.id }}" data-bs-url="{{ url_for('delete_trait', trait_id=trait.id )}}" data-bs-record="{{ trait.trait }}" data-bs-type="Trait" data-bs-toggle="modal" data-bs-target="#delete-modal">
+                                            Delete
                                         </button>
-                                    </form>
-                                </div>
+                                        <button id="edit{{ trait.id }}" class="btn btn-edit-trait" type="button" data-id="{{ trait.id }}">
+                                            Edit Trait
+                                        </button>
+                                        <button id="save{{ trait.id}}" class="btn btn-save-trait" type="button" data-id="{{ trait.id }}" disabled>
+                                            Save Trait
+                                        </button>
+                                    </div>
+
+                                    <button class="btn btn-add-trait w-100" data-url="{{ url_for('add_trait_to_assistant', trait_id=trait.id, assistant_id='') }}" type="button">
+                                        Add to active assistant <i class="fa-solid fa-angles-right"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
+                    </div>
                     {% endfor %}
-            {% else %}
-                <h5 class="card-title mt-1">No traits </h5>
-            {% endif %}
-            <h6 class="card-subtitle mt-2">Add a new trait</h6>
-            <form id="trait-form" class="mt-2" method="post" action="{{ url_for('create_or_edit_trait')}}">
-                <div id="traits-name-value-modaloffcanvas">
-                    <label for="trait">Trait</label>
-                    <input type="text" class="form-control" id="trait" name="trait" placeholder="Example: blunt" required>
-                    
-                    <label id="value-label" for="value" class="form-label">Value</label>
-                    <input type="range" class="form-range" name="value" min="1" max="10" id="value" required>
                 </div>
-                         
-                <textarea class="form-control" name="reason-why" placeholder="Reason why..." id="reason-why" style="height: 100px" required></textarea>
+                {% else %}
+                <h5 class="card-title mt-1">No traits </h5>
+                {% endif %}
+                <h6 class="card-subtitle mt-2">Add a new trait</h6>
+                <form id="trait-form" class="mt-2" method="post" action="{{ url_for('create_or_edit_trait')}}">
+                    <div id="traits-name-value-modaloffcanvas">
+                        <label for="trait">Trait</label>
+                        <input type="text" class="form-control" id="trait" name="trait" placeholder="Example: blunt" required>
+                        
+                        <label id="value-label" for="value" class="form-label">Value</label>
+                        <input type="range" class="form-range" name="value" min="1" max="10" id="value">
+                    </div>
+                            
+                    <textarea class="form-control" name="reason-why" placeholder="Reason why..." id="reason-why" style="height: 100px" required></textarea>
 
-                <button id="save-trait" type="submit" class="btn btn-manage mt-2">Add new trait</button>
-            </form>                   
+                    <button id="save-trait" type="submit" class="btn btn-manage mt-2">Add new trait</button>
+                </form>                   
+            </div>
         </div>
     </div>
-</div>
 </div>
 {% endblock %}
 
