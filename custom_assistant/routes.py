@@ -411,6 +411,13 @@ def register():
             return render_template(
                 "register.html", g_client_id=g_client_id, error=error
             )
+        except Exception:
+            db.session.rollback()
+            db.session.close()
+            error = f"Operational error - please retry..."
+            return render_template(
+                "register.html", g_client_id=g_client_id, error=error
+            )
     else:
         return render_template("register.html", g_client_id=g_client_id)
 
