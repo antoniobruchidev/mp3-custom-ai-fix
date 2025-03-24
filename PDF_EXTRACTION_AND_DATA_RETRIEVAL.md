@@ -1,36 +1,4 @@
-## Celery and background tasks
-Using 1% of celery capabilities, needed to let the user have a quick response when adding a source to a collection.
-It uses Redis as a key-value pair server to share tasks between the main app and the workers set.
-I have shared only two methods between the apps and the worker.
-The retry method from worker.tasks
-```python
-@celery.task
-def retry(task_id):
-    result_id = None
-    while result_id is None:
-        time.sleep(1200)
-        result = proprietary_hardware_data_ingestion(task_id)
-        if result["status"] == 200:
-            result_id = result["result_id"]
-    return {
-        "task_id": task_id,
-        "started_at": datetime.datetime.now().isoformat(),
-        "job_id": result_id
-    }
-```
-Responsibile for retrying to contact the proprietary hardware server to pass the data which it needs to ingest.
-The ingest method from proprietary_hardware.tasks
-```python
-@proprietary_celery.task
-def ingest_data(collection_id, source_id, user_id):
-    return ingest(collection_id, source_id, user_id)
-```
-Which will be called directly when the server is up, from the retry method when it goes down.
-
-Depending on how big the PDF is, it could take more than a couple of minutes. A 195 page PDF size, 15Mb, took about 20 minutes using only cpu, about 4 using gpu. Deployed on a free tier huggingface spaces it took almost 5 hours...
-It was necessary to give the user a response well before the minimum of 4 minutes. From there the idea to start a new thread and notify the user with an email when the file is ingested.
-
-## PDF extraction
+## PDF extraction - [docs](https://docs.unstructured.io/examplecode/codesamples/apioss/table-extraction-from-pdf)
 ```python
 with app.app_context():
         try:
@@ -118,6 +86,8 @@ Responsible of retrieving the data needed from the database, and extracting the 
 ```
 Responsible to modify the metadata for each element extracted, save the images and tables extracted in local temp directory (proprietary server), upload tables and images to aws bucket and append each document text and metadatas to a Document list together with a list of unique ids.
 
+## Data ingestion - [DOCS](https://python.langchain.com/docs/how_to/multi_vector/)
+
 ```python
     client, error = download_client(user_id)
 
@@ -150,3 +120,9 @@ Responsible for downloading the user vectorstore from aws bucket, initializi it 
     return True
 ```
 Finally create a timestamp to update the user table as a last updated (not useful at the moment but it will be), update the database (method will also send an email to the user notifying him/her of the ended task), and most important upload the vectorstore to the aws client ready to be retrieved when necessary.
+
+## Vectorstore Collections storage and data retrieval for RAG
+When a user ingest a document after being uploaded to an aws bucket will also be downloaded by the proprietary hardware server, together with the user vectorstore, the server will extract the data and ingest it in the collection, then upload again the vectorstore to aws bucket.
+When a user wants to query a collection of documents, the propriatary hardware server will download the relative collection from the aws bucket, initialize the vectorstore as a retriever and invoke it with the question.
+
+[Official docs](https://python.langchain.com/docs/versions/migrating_chains/retrieval_qa/#legacy)

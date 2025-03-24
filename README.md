@@ -146,5 +146,10 @@ to read the app logging from the heroku server.
 
 ## [BUGS](BUGS.md)
 
+## [BACKGROUND TASK AND CELERY](BACKGROUND_TASKS_AND_CELERY.md)
+
+## [PDF EXTRACTION AND DATA RETRIEVAL](PDF_EXTRACTION_AND_DATA_RETRIEVAL.md)
+
+
 
 
