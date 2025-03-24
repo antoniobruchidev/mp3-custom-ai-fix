@@ -5,6 +5,11 @@
 <h1 class="text-center mt-5">
     Assistants Page
 </h1>
+{% if timestamp != 0 %}
+    <div class="alert alert-danger" role="alert">
+        Proprietary inference hardware is down since {{ timestamp }}.   <a href="https://github.com/antoniobruchidev/mp3-custom-ai" target="blank" class="alert-link">Know more...</a>
+    </div>
+{% endif %}
 <div class="collection-container mt-5">
     <div class="card">
         <div class="card-header">
@@ -81,7 +86,7 @@
             </div>
             
             <div class="btn-group mt-3 w-100" role="group" aria-label="Add assistants">
-                <button id="send-message" class="btn btn-send-message" type="button">
+                <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp > 0 %}disabled{% endif %}>
                     Send message
                 </button>
                 <button id="save-history" class="btn btn-save-history rounded-end" type="button" data-url="{{ url_for('save_chat_history')}}">

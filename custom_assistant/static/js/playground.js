@@ -146,45 +146,6 @@ const saveAssistant = async () => {
 }
 
 /**
- * Method to call the chatbot
- */
-const chat = async () => {
-    const base_prompt = document.getElementById("base-prompt")
-    let traitsPrompt = ""
-    const message = document.getElementById("message")
-    const traits = document.getElementsByClassName("btn-trait")
-    if (traits.length > 0) {
-        for (let i=0; i < traits.length; i++) {
-            let title = traits[i].getAttribute("data-bs-title")
-            let reasonWhy = traits[i].getAttribute("data-bs-content")
-            traitsPrompt += `${title} \n${reasonWhy}\n\n`
-        }
-    }
-    const url = window.location.pathname.replace("/playground", "/chat")
-    const formData = new FormData()
-    formData.append("base-prompt", base_prompt.value)
-    formData.append("traits", traitsPrompt)
-    formData.append("message", message.value)
-    const response = await fetch(url, {
-        method: "POST",
-        body: formData
-    })
-    const data = await response.json()
-    if (data.status == 200) {
-        showAnswer(data.answer)
-        const promptTokens = document.getElementById("prompt-tokens")
-        const completionTokens = document.getElementById("completion-tokens")
-        let newPromptTokens = parseInt(promptTokens.innerText) + parseInt(data.prompt_tokens)
-        let newCompletionTokens = parseInt(completionTokens.innerText) + parseInt(data.comp_tokens)
-        promptTokens.innerText = newPromptTokens
-        completionTokens.innerText = newCompletionTokens
-        createToast(`PROMPT TOKENS: ${data.prompt_tokens} - COMPLETION TOKENS: ${data.comp_tokens}`)
-    } else {
-        createToast(data.error)
-    }
-}
-
-/**
  * Method to create a button with the values of the trait in a popover
  * @param {string} trait 
  * @param {integer} value 
@@ -252,7 +213,13 @@ for (let trait of traits) {
 }
 
 // add event listener to invoke the chatbot with the active settings
-sendButton.addEventListener("click", chat)
+sendButton.addEventListener("click", event => {
+    const button = event.target
+    button.setAttribute("disabled", "true")
+    const formData = preparePrompts()
+    createSpinner(event.target)
+    sendChatForm(formData, event.target)
+})
 
 // add event listener to clear the traits
 clearTraitsButton.addEventListener("click", clearTraits)
@@ -260,4 +227,105 @@ clearTraitsButton.addEventListener("click", clearTraits)
 // add event listener to save the assistant if the user is logged in
 if (saveAssistantButton != null) {
     saveAssistantButton.addEventListener("click", saveAssistant)
+}
+
+
+const checkBackupServer = () => {
+    setTimeout(async function(){
+        const url = window.location.pathname.replace("/playground", "/backup_server_status")
+        const response = await fetch (url, {
+            method: "GET"
+        })
+        const data = await response.json()
+        if (data.backup_server_up) {
+            backupServerUp = "True"
+        }
+        console.log(backupServerUp)
+    })
+}
+
+/**
+ * Method to create a spinner and notify the user
+ * @param {html element} element 
+ */
+const createSpinner = (element) => {
+    const spinnerSpan = document.createElement("span")
+    const spinnerRole = document.createElement("span")
+    spinnerSpan.classList.add("spinner-border", "spinner-border-sm")
+    spinnerSpan.setAttribute("aria-hidden", "true")
+    spinnerRole.setAttribute("role", "status")
+    spinnerRole.innerText = "Loading..."
+    element.innerHTML = ""
+    element.appendChild(spinnerSpan)
+    element.appendChild(spinnerRole)
+    element.setAttribute("disabled", "true")
+}
+
+const sendChatForm = async (formData, element) => {
+    const url = window.location.pathname.replace("/playground", "/chat")
+    const response = await fetch(url, {
+        method: "POST",
+        body: formData
+    })
+    const data = await response.json()
+    if (data.status == 200) {
+        showAnswer(data.answer)
+        element.removeAttribute("disabled")
+        element.innerHTML = "Send message"
+        const promptTokens = document.getElementById("prompt-tokens")
+        const completionTokens = document.getElementById("completion-tokens")
+        let newPromptTokens = parseInt(promptTokens.innerText) + parseInt(data.prompt_tokens)
+        let newCompletionTokens = parseInt(completionTokens.innerText) + parseInt(data.comp_tokens)
+        if (newCompletionTokens == undefined || newPromptTokens == undefined) {
+            createToast(data.error_daily_tokens)
+        } else {
+            promptTokens.innerText = newPromptTokens
+            completionTokens.innerText = newCompletionTokens
+            createToast(`PROMPT TOKENS: ${data.prompt_tokens} - COMPLETION TOKENS: ${data.comp_tokens}`)
+        }
+    } else {
+        createToast(data.error)
+    }
+        
+}
+
+/**
+ * Method to prepare the prompts for the chatbot
+ */
+const preparePrompts = () => {
+    if (timestamp == "0"){
+        const base_prompt = document.getElementById("base-prompt")
+        let traitsPrompt = ""
+        const message = document.getElementById("message")
+        const traits = document.getElementsByClassName("btn-trait")
+        if (traits.length > 0) {
+            for (let i=0; i < traits.length; i++) {
+                let title = traits[i].getAttribute("data-bs-title")
+                let reasonWhy = traits[i].getAttribute("data-bs-content")
+                traitsPrompt += `${title} \n${reasonWhy}\n\n`
+            }
+        }
+        const formData = new FormData()
+        formData.append("base-prompt", base_prompt.value)
+        formData.append("traits", traitsPrompt)
+        formData.append("message", message.value)
+        return formData
+    } else {
+        const message = document.getElementById("message")
+        const formData = new FormData()
+        formData.append("message", message.value)
+        return formData
+    }
+}
+
+if (backupServerUp != "True"){
+    for (let i = 0; i < 10; i++) {
+        checkBackupServer()
+        if (backupServerUp){
+            break
+        }
+    }
+    sendButton.removeAttribute("disabled")
+    const alertSpan = document.getElementById("alert-span")
+    alertSpan.innerText = "Service will be slower and assistant not customizable, sorry for the incovenience."
 }

@@ -41,11 +41,13 @@ The platform will be accessible by any device, including mobiles.
 The platforms color are in a relaxing tonality of blue with no contrast problems.
 
 ## V1 Features
- - Fully customizable AI chatbot/assistant 
+ - Fully customizable AI chatbot/assistant
+ - RAG from users documents
 
 ## Future Features
+ - RAG from public collections created crawling sitemap.xml of documentations websites, converting in markdown and ingesting in collections [EXAMPLE XML TO FEED THE CRAwLER WITH](https://docs.djangoproject.com/sitemap-it.xml)
  - RAG from shared knowledge among users
- - Shareable Flows
+ - Shareable Flows and Agents
 
 ## Development
 
@@ -125,7 +127,12 @@ Create a file named .python-version with the python version the app is using.
 ```
 It will tell the heroku platform which python version to use.
 
-Deployment process is now pretty straightforward. Login on Heroku, go to the application deploy tab, follow the cli instructions or connect the app to the github repo. Click deploy branch.
+Deployment process is now pretty straightforward. Login on Heroku, go to the application deploy tab, follow the cli instructions or connect the app to the github repo. Click deploy branch and set env variables.
+
+```bash
+heroku log --app app-name --tail
+```
+to read the app logging from the heroku server.
 
 ## [TESTING](TESTING.md)
 

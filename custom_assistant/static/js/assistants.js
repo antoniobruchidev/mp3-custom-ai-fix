@@ -198,8 +198,8 @@ const saveOrEditAssistant = async () => {
     const edit = editAssistantButton.hasAttribute("disabled")
     const form = document.getElementById("assistant-form")
     const url = form.getAttribute("action")
-    var name = document.getElementById("assistant-name")
-    var prompt = document.getElementById("assistant-base-prompt")
+    const name = document.getElementById("assistant-name")
+    const prompt = document.getElementById("assistant-base-prompt")
     if (name.value != null || prompt.value != null){
         if (activeAssistant.id != null){
             payload = {
@@ -477,26 +477,28 @@ const saveHistoryButton = document.getElementById("save-history")
  * @param {string} url 
  */
 const saveHistory = async (url) => {
-    const name = document.getElementById("chat-history-name")
-    const payload = {"chat_history": chatHistory, "chat_history_name": name.value}
-    const headers = {"Content-Type": "application/json"}
-    const response = await fetch(url, {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify(payload)
-    })
-    const data = await response.json()
-    if (data.status == 200) {
-        createToast(data.message)
-        assistantSelector.value = "Select your assistant"
-        basePrompt.value = ""
-        assistantName.value = ""
-        const answerContainer = document.getElementById("answer-container")
-        const message = document.getElementById("message")
-        message.value = ""
-        answerContainer.innerHTML = ""
-    } else {
-        createToast(data.error)
+    if (chat_history.length > 0){
+        const name = document.getElementById("chat-history-name")
+        const payload = {"chat_history": chatHistory, "chat_history_name": name.value}
+        const headers = {"Content-Type": "application/json"}
+        const response = await fetch(url, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(payload)
+        })
+        const data = await response.json()
+        if (data.status == 200) {
+            createToast(data.message)
+            assistantSelector.value = "Select your assistant"
+            basePrompt.value = ""
+            assistantName.value = ""
+            const answerContainer = document.getElementById("answer-container")
+            const message = document.getElementById("message")
+            message.value = ""
+            answerContainer.innerHTML = ""
+        } else {
+            createToast(data.error)
+        }
     }
 }
 

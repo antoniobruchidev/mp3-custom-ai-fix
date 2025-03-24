@@ -5,7 +5,11 @@ from flask import flash, redirect, render_template, request, url_for
 from celery.result import AsyncResult
 import requests
 from custom_assistant import app, db, argon2
-from custom_assistant.inference import chat
+from custom_assistant.inference import (
+    backup_server_switch,
+    chat,
+    query_hf_inference_endpoint,
+)
 from custom_assistant.mail import forgot_password_email, send_activation_email
 from custom_assistant.models import (
     Assistant,
@@ -87,6 +91,15 @@ def bot_answer() -> dict:
     collection_id = request.form.get("collection-id", None)
     user = None
     daily_tokens_error = None
+    timestamp = app.config["PROPRIETARY_HARDWARE_DOWN"]
+    if timestamp > 0:
+        answer = query_hf_inference_endpoint(message)
+        daily_tokens_error = f"Sorry for the incovenience - free tokens"
+        return {
+            "status": 200,
+            "answer": answer,
+            "daily_tokens_error": daily_tokens_error,
+        }
     try:
         if current_user.is_authenticated:
             user = db.session.get(User, current_user.id)
@@ -169,6 +182,7 @@ def playground():
     traits = []
     assistants_available = 0
     traits_available = 0
+    timestamp, backup_server_up = backup_server_switch()
     try:
         if current_user.is_authenticated:
             assistants = (
@@ -192,6 +206,9 @@ def playground():
             traits_limit=os.getenv("TRAIT_SLOTS", 20),
             assistants=assistants,
             traits=traits,
+            timestamp=timestamp,
+            backup_server_up=backup_server_up,
+            backup_server_url=os.getenv("BACKUP_SERVER_URL"),
         )
     except OperationalError as e:
         db.session.rollback()
@@ -853,7 +870,7 @@ def get_assistants():
     """
     assistants_limit = os.getenv("ASSISTANT_SLOTS", 5)
     traits_limit = os.getenv("TRAITS_SLOTS", 20)
-
+    timestamp, backup_server_up = backup_server_switch()
     if current_user.is_authenticated:
         try:
             assistants = (
@@ -882,6 +899,7 @@ def get_assistants():
             assistants_available=assistants_available,
             traits_available=traits_available,
             traits=traits,
+            timestamp=timestamp,
         )
     else:
         return redirect(url_for("login"))
@@ -1351,7 +1369,7 @@ def delete_account(user_id):
         render_template: login
     """
     g_client_id = os.getenv("GOOGLE_CLIENT_ID")
-    try:        
+    try:
         if int(user_id) == int(current_user.id):
             logout_user()
             user = db.session.get(User, user_id)
@@ -1454,11 +1472,16 @@ def get_chat_history(chat_history_id):
     Returns:
         render_template: the chat history page
     """
+    timestamp, backup_server_up = backup_server_switch()
     try:
         chat_history = db.session.get(ChatHistory, chat_history_id)
         messages = chat_history.messages
         return render_template(
-            "chat_history.html", chat_history=chat_history, messages=messages
+            "chat_history.html",
+            chat_history=chat_history,
+            messages=messages,
+            timestamp=timestamp,
+            backup_server_up=backup_server_up,
         )
     except OperationalError:
         flash("Operational error: Please retry")
@@ -1497,3 +1520,9 @@ def delete_chat_history(chat_history_id):
         flash("Operational error: Please retry...")
     except Exception:
         flash("Unknown error: Please retry...")
+
+
+@app.get("/backup_server_status")
+def backup_server_status():
+    timestamp, backup_server_up = backup_server_switch()
+    return {"status": 200, "backup_server_up": backup_server_up}

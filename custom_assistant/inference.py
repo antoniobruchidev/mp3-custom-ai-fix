@@ -1,13 +1,46 @@
+import datetime
 import json
 import os
 from dotenv import load_dotenv
 import requests
+from custom_assistant import app
+from worker.utils import get_proprietary_hardware_status
+from openai import OpenAI
 
 load_dotenv()
 
-registered_users_model = os.getenv("QWUEN_MODEL")
-unregistered_users_model = os.getenv("MODEL")
+client = OpenAI(
+		base_url = "https://yhdmpvwfk16e3ory.eu-west-1.aws.endpoints.huggingface.cloud/v1/",
+		api_key = os.getenv("HUGGINGFACE_INFERENCE_KEY")
+	)
 
+def query_hf_inference_endpoint(message):
+    print(message)
+    try:
+        chat_completion = client.chat.completions.create(
+            model="bartowski/Qwen2.5-7B-Instruct-1M-GGUF",
+            messages=[
+            {
+                "role": "user",
+                "content": message
+            }
+        ],
+            top_p=None,
+            temperature=None,
+            max_tokens=150,
+            stream=False,
+            seed=None,
+            stop=None,
+            frequency_penalty=None,
+            presence_penalty=None
+        )
+        print(chat_completion.choices[0].message.content)
+        return chat_completion.choices[0].message.content
+    except Exception as e:
+        print(e)
+        return None
+
+registered_users_model = os.getenv("QWEN_MODEL")
 # http://localhost:11434/v1/chat/completions in development
 url = os.getenv("OPENAI_COMPATIBLE_SERVER")
 
@@ -42,6 +75,7 @@ def chat(
         message (_type_): _description_
     """
     response = None
+    # redirecting to proprietary query route
     if question is not None and collection_id is not None:
         payload = {"question": question, "collection_id": collection_id}
         retriever_url = f"{url.split('11434')[0]}5001/query"
@@ -51,6 +85,7 @@ def chat(
             return {"status": 200, "message": data["message"]}
         else:
             return {"status": 400, "error": data["error"]}
+    # redirectirect to proprietary chat with history route
     if chat_history is not None:
         payload = {"chat_history": json.dumps(chat_history)}
         ollama_url = f"{url.split('11434')[0]}5001/chat_with_history"
@@ -72,7 +107,7 @@ def chat(
             {"role": "user", "content": message},
         ]
     payload = {
-        "model": unregistered_users_model,
+        "model": registered_users_model,
         "messages": messages,
         "max_tokens": 131000,
         "temperature": 1,
@@ -87,3 +122,23 @@ def chat(
     answer = ai_message["choices"][0]["message"]["content"]
 
     return answer, prompt_tokens, completion_tokens
+
+
+def backup_server_switch():
+    timestamp = app.config["PROPRIETARY_HARDWARE_DOWN"]
+    chat_server, embedding_server = get_proprietary_hardware_status()
+    backup_server_up = True
+    if not embedding_server:
+        inference_backup_server = query_hf_inference_endpoint("Who are you?")
+        backup_server_up = True if inference_backup_server is not None else False
+        print(backup_server_up)
+        if timestamp == 0:
+            app.config["PROPRIETARY_HARDWARE_DOWN"] = (
+                datetime.datetime.now().timestamp()
+            )
+        timestamp = datetime.datetime.fromtimestamp(
+            app.config["PROPRIETARY_HARDWARE_DOWN"]
+        ).isoformat()
+    else:
+        app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
+    return timestamp, backup_server_up

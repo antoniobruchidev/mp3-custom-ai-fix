@@ -5,6 +5,17 @@
 <h1 class="text-center mt-5">
     Playground Page
 </h1>
+{% if timestamp != 0 %}
+    <div class="alert alert-danger" role="alert">
+        Proprietary inference hardware is down since {{ timestamp }}.
+        {% if backup_server_up %}
+            Service will be slower and assistant not customizable, sorry for the incovenience.
+        {% else %}
+            <span id="alert-span">Backup server starting, trying again in one minute. Sorry for the incovenience.</span>
+        {% endif %}
+        <a href="https://github.com/antoniobruchidev/mp3-custom-ai" target="blank" class="alert-link">Know more...</a>
+    </div>
+{% endif %}
 <div class="assistant-container mt-5">
     <div class="card">
         <div class="card-header">
@@ -60,7 +71,7 @@
                 <label for="message" class="form-label">Message:</label>
                 <textarea class="form-control" id="message" rows="3"></textarea>
             </div>
-            <button id="send-message" class="btn btn-send-message" type="button">
+            <button id="send-message" class="btn btn-send-message" type="button" {% if not backup_server_up %}disabled{% endif %}>
                 Send message
             </button>
             <div class="card mt-4">
@@ -126,5 +137,9 @@
 {% endblock %}
 
 {% block postloadjs %}
+<script>
+    const backupServerUp = "{{ backup_server_up }}"
+    const timestamp = "{{ timestamp }}"
+</script>
 <script src="{{ url_for('static', filename="js/playground.js")}}"></script>
 {% endblock %}
