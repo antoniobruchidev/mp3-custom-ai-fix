@@ -404,8 +404,8 @@ def register():
             if user is not None:
                 db.session.add(user)
                 db.session.commit()
-                db.session.close()
                 send_activation_email(user)
+                db.session.close()
                 error = f"An email has been sent to {user.email}. Please verify your email address."
                 return render_template(
                     "login.html", g_client_id=g_client_id, error=error
@@ -415,17 +415,17 @@ def register():
                 return render_template(
                     "login.html", error=error, g_client_id=g_client_id
                 )
-        except OperationalError as e:
+        except OperationalError:
             db.session.rollback()
             db.session.close()
             error = f"Operational error - please retry..."
             return render_template(
                 "register.html", g_client_id=g_client_id, error=error
             )
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             db.session.close()
-            error = f"{e}"
+            error = f"Unknown error - Please retry..."
             return render_template(
                 "register.html", g_client_id=g_client_id, error=error
             )
