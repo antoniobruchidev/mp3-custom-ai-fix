@@ -253,7 +253,8 @@ const showMessage = (message, user) => {
         alert.innerHTML = message
         alert.prepend(icon)
     }
-    chatHistory.appendChild(alert)
+    const answerContainer = document.getElementById("answer-container")
+    answerContainer.appendChild(alert)
 }
 
 
