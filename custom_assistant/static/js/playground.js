@@ -129,7 +129,8 @@ const saveAssistant = async () => {
         let payload = {
             "assistant_name": name.value,
             "base_prompt": basePrompt.value,
-            "traits": characterTraits
+            "traits": characterTraits,
+            "edit": false
             };
         const response = await fetch(url, {
             method: "POST",
