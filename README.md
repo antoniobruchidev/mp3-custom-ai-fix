@@ -8,7 +8,7 @@ To be able to do this I'll have to work with "abliterated" models (more later), 
 
 Altough at the end I did not let user shares their assistant, in the future they will be able to share their collections.
 
-[LIVE BETA](https://the-custom-assistant-b5bd8279ae7f.herokuapp.com/)
+[LIVE BETA](https://custom-assistant-913f9821b516.herokuapp.com/)
 
 ## UX
 The platform targets any person who wants to play with a completely unrestrictred and customizable AI chatbot.

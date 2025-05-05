@@ -41,3 +41,17 @@ Added a spinner to the sends message button and disabling it until data is fetch
 ### Not saving tables and images when extracting pdfs
 In storage.py I was checking for "jpg" <code>not in ALLOWED_EXTENSION</code>
 Removed the not.
+
+### Playground not saving assistant
+Broke the page when I created the assistant page and I used the same route assistants/create to edit an existing assistant adding a conditional statement. Fixed adding <code>"edit": false</code> in the payload.
+
+### Assistants page not sending messages
+Not sure when I broke the page, probably while trying to clean up and made a mess...
+I was trying to append as DOM children the messages element to chatHistory (array type)
+Fixed by declaring the DOM element to which append the message elements and adding the elements to it.
+
+### Assistant page not saving the chat history
+In the function saveHistory in assistants.js I wrote the conditional statement for chat_history instead of chatHistory. Fixed the typo.
+
+### Proprietary server down issue
+When proprietary server is down the timestamp created in backup_server_switch is in ISO format and cannot be > than 0. Fixed by setting it to None when the proprietary hardware is up, and checking only if it exists in the template.
