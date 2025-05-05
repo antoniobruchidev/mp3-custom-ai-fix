@@ -478,7 +478,7 @@ const saveHistoryButton = document.getElementById("save-history")
  * @param {string} url 
  */
 const saveHistory = async (url) => {
-    if (chat_history.length > 0){
+    if (chatHistory.length > 0){
         const name = document.getElementById("chat-history-name")
         const payload = {"chat_history": chatHistory, "chat_history_name": name.value}
         const headers = {"Content-Type": "application/json"}
