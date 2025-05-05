@@ -141,4 +141,5 @@ def backup_server_switch():
         ).isoformat()
     else:
         app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
+        timestamp = None
     return timestamp, backup_server_up

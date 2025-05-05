@@ -85,7 +85,7 @@
                 </div>
             
                 <div class="btn-group mt-3 w-100" role="group" aria-label="Add assistants">
-                    <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp > 0 %}disabled{% endif %}>
+                    <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp %}disabled{% endif %}>
                         Send message
                     </button>
                     <button id="save-history" class="btn btn-save-history rounded-end" type="button" data-url="{{ url_for('save_chat_history')}}">
