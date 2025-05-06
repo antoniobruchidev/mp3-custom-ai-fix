@@ -344,6 +344,7 @@ def get_collections():
         ).isoformat()
     else:
         app.config["PROPRIETARY_HARDWARE_DOWN"] = 0
+        timestamp = None
     if current_user.is_authenticated:
         try:
             collections = (

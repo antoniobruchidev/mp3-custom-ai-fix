@@ -122,6 +122,11 @@ def query():
             collection = db.session.get(Collection, request.json.get("collection_id"))
         except OperationalError as e:
             error = e
+    except Exception as e:
+        try:
+            collection = db.session.get(Collection, request.json.get("collection_id"))
+        except Exception as e:
+            error = e
     answer = query_with_retriever(
         question=question,
         collection=collection.collection_name,

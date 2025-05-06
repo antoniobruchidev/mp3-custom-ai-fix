@@ -5,7 +5,7 @@
     <h1 class="text-center mt-5">
         Collections Page
     </h1>
-    {% if timestamp != 0 %}
+    {% if timestamp %}
     <div class="alert alert-danger" role="alert">
         Proprietary inference hardware is down since {{ timestamp }}.   <a href="https://github.com/antoniobruchidev/mp3-custom-ai" target="blank" class="alert-link">Know more...</a>
     </div>
@@ -78,7 +78,7 @@
                         <label for="question" class="form-label">Question:</label>
                         <textarea class="form-control" id="question" name="question" rows="3"></textarea>
                     </div>
-                    <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp > 0 %}disabled{% endif %}>
+                    <button id="send-message" class="btn btn-send-message" type="button" {% if timestamp %}disabled{% endif %}>
                         Send message
                     </button>
                     <div class="card mt-4">
